@@ -1,49 +1,40 @@
-# 🎢 Phantasialand Wartezeiten App
+# 🎢 Phantasialand Wait Times App
 
-Eine einfache Android-App zur Anzeige der aktuellen Wartezeiten für Attraktionen im Phantasialand Themenpark. Sie hilft Besuchern, ihren Tag im Park besser zu planen, indem sie Live-Daten abruft (sofern verfügbar) und verschiedene Ansichts- und Organisationsoptionen bietet.
-
-*(Screenshots folgen)*
-[Hier könnten Screenshots der App eingefügt werden, z.B. von der Hauptliste, dem Filter, den Favoriten.]
+A simple Android app for displaying current wait times for attractions at Phantasialand Theme Park. It helps visitors better plan their day at the park by retrieving live data (where available) and offering various viewing and organization options.
 
 ## ✨ Features
 
-*   **Aktuelle Wartezeiten:** Anzeige der von der Datenquelle gemeldeten Wartezeiten.
-*   **Attraktionsstatus:** Zeigt an, ob eine Attraktion geöffnet, geschlossen oder in Wartung ist.
-*   **Offline-Caching:** Speichert die zuletzt erfolgreich abgerufenen Daten, um auch ohne Internetverbindung die letzten bekannten Wartezeiten anzuzeigen.
-*   **Pull-to-Refresh:** Manuelles Aktualisieren der Daten durch Herunterziehen der Liste.
-*   **Sortierung:** Möglichkeit, die Attraktionen nach Name (A-Z, Z-A) oder nach Wartezeit (kürzeste/längste zuerst) zu sortieren.
-*   **Filterung:** Option, nur die aktuell geöffneten Attraktionen anzuzeigen.
-*   **Favoriten:** Markieren von Lieblingsattraktionen mit einem Stern. Die Favoriten werden gespeichert und bleiben über App-Neustarts hinweg erhalten.
-*   **Attraktions-Icons:** Visuelle Kennzeichnung des Attraktionstyps (z.B. Achterbahn, Wasserbahn, Show) durch passende Icons.
-*   **Thematisches Design:** Ein Hintergrundbild sorgt für Park-Atmosphäre.
-*   **Letzte Aktualisierung:** Anzeige, wann die Daten zuletzt erfolgreich abgerufen wurden.
-*   **Fehlerbehandlung:** Informiert den Benutzer bei Problemen mit dem Datenabruf.
+* **Current Wait Times:** Displays wait times reported by the data source.
+* **Attraction Status:** Shows whether an attraction is open, closed, or under maintenance.
+* **Offline Caching:** Saves the last successfully retrieved data to display the last known wait times even without an internet connection.
+* **Pull-to-Refresh:** Manually refresh the data by pulling down the list.
+* **Sorting:** Ability to sort attractions by name (A-Z, Z-A) or by wait time (shortest/longest first).
+* **Filtering:** Option to display only the currently open attractions.
+* **Favorites:** Mark your favorite attractions with a star. Favorites are saved and remain active even after app restarts.
+* **Attraction Icons:** Visually indicate the attraction type (e.g., roller coaster, water ride, show) with appropriate icons.
+* **Thematic Design:** A background image creates a park atmosphere.
+* **Last Updated:** Displays when the data was last successfully retrieved.
+* **Error Handling:** Informs the user of any problems with the data retrieval.
 
-## 🛠️ Technologie-Stack
+## 🛠️ Technology Stack
 
-*   **Sprache:** Kotlin
-*   **UI Toolkit:** Jetpack Compose
-*   **Architektur:** MVVM (Model-View-ViewModel)
-*   **Asynchronität:** Kotlin Coroutines & StateFlow
-*   **Dependency Injection:** Hilt
-*   **Netzwerk:** (Wahrscheinlich Retrofit oder Ktor - bitte ergänzen, was du verwendest)
-*   **Datenspeicherung (Cache/Favoriten):** SharedPreferences
-*   **UI-Komponenten:**
-    *   Material 3 Design Components
-    *   Accompanist SwipeRefresh für Pull-to-Refresh
+* **Language:** Kotlin
+* **UI Toolkit:** Jetpack Compose
+* **Architecture:** MVVM (Model-View-ViewModel)
+* **Asynchrony:** Kotlin Coroutines & StateFlow
+* **Dependency Injection:** Hilt
+* **Network:** (Probably Retrofit or Ktor - please specify which one you use)
+* **Data Storage (Cache/Favorites):** SharedPreferences
+* **UI Components:**
+* Material 3 Design Components
+* Accompanist SwipeRefresh for pull-to-refresh
 
-## 🚀 Zukünftige Ideen / Mögliche Erweiterungen
+## 🚀 Future Ideas / Possible Extensions
 
-*   Integration einer Parkkarte mit Anzeige der Wartezeiten direkt an den Attraktionsstandorten.
-*   Push-Benachrichtigungen für Favoriten, wenn deren Wartezeit unter einen bestimmten Wert fällt.
-*   Anzeige von Show-Zeiten und anderen Parkinformationen.
-*   Detailliertere Informationen zu Attraktionen (z.B. Mindestgröße, Typ, Beschreibung).
-*   Umstellung des Caches auf eine robustere Lösung wie Room Database.
-*   Widgets für den Android Homescreen.
-*   Verbesserte Barrierefreiheit.
-
-## 🙏 Danksagung
-
-*   Ein Dank geht an **[Quelle der Wartezeit-Daten einfügen, z.B. "die inoffizielle Phantasialand API" oder der spezifische Anbieter]** für die Bereitstellung der Daten.
-*   Danke an die Entwickler der verwendeten Open-Source-Bibliotheken (Coil, Hilt, Accompanist etc.).
-*   Icons basieren ggf. auf Material Design Icons / [Andere Icon-Quelle nennen, falls zutreffend].
+* Integration of a park map with wait times displayed directly at the attraction locations.
+* Push notifications for favorites when their wait time falls below a certain value.
+* Display of show times and other park information.
+* More detailed information about attractions (e.g., minimum size, type, description).
+* Transitioning the cache to a more robust solution such as Room Database.
+* Widgets for the Android home screen.
+* Improved accessibility.
