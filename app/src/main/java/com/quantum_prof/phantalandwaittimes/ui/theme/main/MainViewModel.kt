@@ -59,6 +59,23 @@ class MainViewModel @Inject constructor(
         _uiState.update { it.copy(favoriteCodes = favorites) }
     }
 
+    fun toggleSortDirection() {
+        // Bestimme die neue Richtung
+        val newDirection = if (_uiState.value.currentSortDirection == SortDirection.ASCENDING) {
+            SortDirection.DESCENDING
+        } else {
+            SortDirection.ASCENDING
+        }
+
+        // Update die Richtung im State *zuerst*
+        _uiState.update { it.copy(currentSortDirection = newDirection) }
+
+        // Wende Filter und die *neue* Sortierung (mit dem *alten* Typ)
+        // auf die *aktuell angezeigte* Liste an
+        applyFiltersAndSorting(_uiState.value.waitTimes) // Einfacher Ansatz
+        // applyFiltersAndSorting(originalFetchedWaitTimes) // Besserer Ansatz
+    }
+
     // --- NEU: Funktion zum Umschalten eines Favoriten ---
     fun toggleFavorite(code: String) {
         val currentFavorites = _uiState.value.favoriteCodes
@@ -77,7 +94,7 @@ class MainViewModel @Inject constructor(
         // Optional: Wenn Favoriten die Sortierung beeinflussen sollen, hier neu filtern/sortieren.
         // Die aktuelle applySorting berücksichtigt Favoriten noch nicht explizit.
         // Falls applySorting erweitert wird, hier aufrufen:
-        // applyFiltersAndSorting(_uiState.value.waitTimes) // Einfacher Ansatz
+        applyFiltersAndSorting(_uiState.value.waitTimes) // Einfacher Ansatz
         // applyFiltersAndSorting(originalFetchedWaitTimes) // Besserer Ansatz
     }
 
@@ -155,28 +172,7 @@ class MainViewModel @Inject constructor(
         // applyFiltersAndSorting(originalFetchedWaitTimes) // Besserer Ansatz
     }
 
-    // --- NEU: Zentrale Hilfsfunktion zum Anwenden von Filter UND Sortierung ---
-    private fun applyFiltersAndSorting(sourceList: List<AttractionWaitTime>) {
-        // 1. Filtern (basierend auf dem aktuellen State)
-        val filteredList = if (_uiState.value.filterOnlyOpen) {
-            sourceList.filter { it.status.lowercase() == "opened" }
-        } else {
-            sourceList // Kein Filter angewendet
-        }
 
-        // 2. Sortieren (basierend auf dem aktuellen State)
-        val sortedAndFilteredList = applySortingInternal( // Umbenannt, um Verwechslung zu vermeiden
-            filteredList,
-            _uiState.value.currentSortType,
-            _uiState.value.currentSortDirection
-            // Optional: Favoriten hier übergeben, wenn applySortingInternal sie berücksichtigt
-            // _uiState.value.favoriteCodes
-        )
-
-        // 3. Aktualisiere nur die Liste im UI State
-        // Die anderen Parameter (isLoading, error, etc.) werden in fetchWaitTimes oder anderen Funktionen gesetzt
-        _uiState.update { it.copy(waitTimes = sortedAndFilteredList) }
-    }
 
 
     // --- GEÄNDERT: Private Hilfsfunktion zum Anwenden der Sortierung (umbenannt) ---
@@ -184,48 +180,76 @@ class MainViewModel @Inject constructor(
     private fun applySortingInternal(
         list: List<AttractionWaitTime>,
         sortType: SortType,
-        sortDirection: SortDirection
-        // Optional: Füge hier `favorites: Set<String>` hinzu, falls benötigt
+        sortDirection: SortDirection,
+        favorites: Set<String> // Set der Favoriten-Codes
     ): List<AttractionWaitTime> {
 
-        // Aktuelle Sortierlogik (ohne Favoriten-Priorisierung)
-        val comparator = when (sortType) {
-            SortType.NAME -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.name }
-            SortType.WAIT_TIME -> compareBy<AttractionWaitTime> {
-                // Behandle geschlossene/Wartungs-Attraktionen (z.B. ans Ende sortieren bei ASC)
-                when (it.status.lowercase()) {
-                    "opened" -> it.waitTimeMinutes
-                    else -> Int.MAX_VALUE // Setze geschlossene/andere ans Ende bei ASC
-                }
-            }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name } // Bei gleicher Zeit nach Name
-            // TODO: Ggf. SortType.FAVORITE hinzufügen
-        }
+        // 1. Primärer Comparator: Favoriten immer zuerst
+        //    compareByDescending: true (ist Favorit) wird als "größer" betrachtet und kommt daher bei DESC zuerst.
+        val favoritesComparator = compareByDescending<AttractionWaitTime> { it.code in favorites }
 
-        // Beispiel: Favoriten zuerst (nur bei aufsteigender Sortierung nach Name oder Zeit)
-        // val combinedComparator = if (sortDirection == SortDirection.ASCENDING && favorites.isNotEmpty()) {
-        //     compareByDescending<AttractionWaitTime> { it.code in favorites } // Favoriten zuerst (true > false)
-        //         .thenComparing(comparator) // Dann nach dem eigentlichen Kriterium
-        // } else {
-        //      comparator // Standard-Sortierung oder wenn absteigend
-        // }
-        // val finalComparator = combinedComparator // Oder nur comparator, wenn keine Favoriten-Sortierung
-
-        return if (sortDirection == SortDirection.ASCENDING) {
-            list.sortedWith(comparator) // oder finalComparator
-        } else {
-            // Bei DESC-Sortierung für Wartezeit: Geschlossene sollen *zuletzt* kommen
-            if (sortType == SortType.WAIT_TIME) {
-                val descComparator = compareBy<AttractionWaitTime> {
-                    when (it.status.lowercase()) {
-                        "opened" -> it.waitTimeMinutes
-                        else -> -1 // Setze geschlossene/andere an den Anfang bei DESC, damit reversed() sie ans Ende stellt
-                    }
-                }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name }
-                list.sortedWith(descComparator.reversed())
-            } else {
-                list.sortedWith(comparator.reversed()) // oder finalComparator.reversed()
+        // 2. Sekundärer Comparator: Basierend auf der Benutzerauswahl (Name oder Wartezeit)
+        val secondaryComparator: Comparator<AttractionWaitTime> = when (sortType) {
+            SortType.NAME -> {
+                // Sortiere nach Name:
+                // - nullsLast(): Namenlose Einträge ans Ende.
+                // - String.CASE_INSENSITIVE_ORDER: Ignoriere Groß/Kleinschreibung.
+                compareBy(nullsLast(String.CASE_INSENSITIVE_ORDER)) { it.name }
             }
+            SortType.WAIT_TIME -> {
+                // Sortiere nach Wartezeit:
+                compareBy<AttractionWaitTime, Int?>(nullsLast()) { attraction ->
+                    // Behandle nicht-geöffnete oder null-Zeit-Attraktionen für die Sortierung:
+                    // Setze ihre "effektive" Wartezeit auf einen sehr hohen Wert, damit sie bei ASC ans Ende kommen.
+                    if (attraction.status?.lowercase(Locale.GERMANY) == "opened" && attraction.waitTimeMinutes != null) {
+                        attraction.waitTimeMinutes
+                    } else {
+                        Int.MAX_VALUE // Geschlossene/unbekannte/null-Zeit Attraktionen gelten als "längste" Wartezeit
+                    }
+                }.thenBy(nullsLast(String.CASE_INSENSITIVE_ORDER)) {
+                    // Bei gleicher effektiver Wartezeit (z.B. alle geschlossenen), sortiere nach Name
+                    it.name
+                }
+            }
+            // Zukünftige Sortieroptionen könnten hier hinzugefügt werden
+            // z.B. SortType.FAVORITE (obwohl Favoriten bereits primär behandelt werden)
         }
+
+        // 3. Kombiniere die Comparators: Erst nach Favorit, dann nach dem sekundären Kriterium
+        val finalComparator = favoritesComparator.thenComparing(secondaryComparator)
+
+        // 4. Wende die Sortierung an
+        return if (sortDirection == SortDirection.ASCENDING) {
+            // Aufsteigend: Favoriten zuerst, dann nach sekundärem Kriterium aufsteigend
+            list.sortedWith(finalComparator)
+        } else {
+            // Absteigend: Favoriten bleiben zuerst, aber die sekundäre Sortierung wird umgedreht.
+            // Wir erstellen einen neuen Comparator, der Favoriten priorisiert und dann absteigend sortiert.
+            val descendingComparator = favoritesComparator.thenComparing(secondaryComparator.reversed())
+            list.sortedWith(descendingComparator)
+
+            // Einfachere Alternative, falls das Verhalten "alles umdrehen" (auch Favoriten nach unten) akzeptabel wäre:
+            // list.sortedWith(finalComparator.reversed())
+            // Die obere Lösung (mit thenComparing(secondaryComparator.reversed())) ist aber meistens das, was man will.
+        }
+    }
+
+    // Stelle sicher, dass applyFiltersAndSorting diese Funktion korrekt aufruft:
+    private fun applyFiltersAndSorting(sourceList: List<AttractionWaitTime>) {
+        val filteredList = if (_uiState.value.filterOnlyOpen) {
+            sourceList.filter { it.status?.lowercase(Locale.GERMANY) == "opened" }
+        } else {
+            sourceList
+        }
+
+        val sortedAndFilteredList = applySortingInternal( // Rufe die überarbeitete Funktion auf
+            filteredList,
+            _uiState.value.currentSortType,
+            _uiState.value.currentSortDirection,
+            _uiState.value.favoriteCodes // Übergabe der Favoriten ist entscheidend!
+        )
+
+        _uiState.update { it.copy(waitTimes = sortedAndFilteredList) }
     }
 }
 

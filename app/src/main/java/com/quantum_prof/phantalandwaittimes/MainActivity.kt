@@ -47,6 +47,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 import com.quantum_prof.phantalandwaittimes.R // <-- ERSETZE mit deinem echten Paketnamen!
+import androidx.compose.material.icons.filled.ArrowDownward // Pfeil nach unten
+import androidx.compose.material.icons.filled.ArrowUpward   // Pfeil nach oben
+import androidx.compose.material.icons.filled.Sort
 
 @AndroidEntryPoint // Hilt Einstiegspunkt
 class MainActivity : ComponentActivity() {
@@ -90,70 +93,71 @@ fun WaitTimeApp(viewModel: MainViewModel = hiltViewModel()) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Phantasialand Waitingtimes") },
+                title = { Text("Phantasialand waiting times") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
-                    // --- HINZUGEFÜGT: Sortierindikator ---
-                    Icon(
-                        imageVector = if (uiState.currentSortDirection == SortDirection.ASCENDING) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                        contentDescription = "Sortierrichtung: ${uiState.currentSortDirection}",
-                        modifier = Modifier.padding(end = 4.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer // Passende Farbe zur AppBar
-                    )
-                    // --- ENDE Sortierindikator ---
+                    // --- NEU: Button zum Umschalten der Richtung ---
+                    IconButton(onClick = { viewModel.toggleSortDirection() }) { // Ruft neue VM-Funktion auf
+                        Icon(
+                            // Wählt Icon basierend auf aktueller Richtung
+                            imageVector = if (uiState.currentSortDirection == SortDirection.ASCENDING)
+                                Icons.Filled.ArrowUpward // Pfeil hoch bei ASC
+                            else
+                                Icons.Filled.ArrowDownward, // Pfeil runter bei DESC
+                            contentDescription = "Sortierrichtung wechseln"
+                        )
+                    }
+                    // --- ENDE Neuer Button ---
 
-                    // --- GEÄNDERT: Box für Dropdown-Menü mit 3-Punkte-Icon ---
+                    // --- Bestehender Button für SortierTYP-Auswahl ---
                     Box { // Box als Anker für das DropdownMenu
-                        IconButton(onClick = { showSortMenu = true }) {
+                        IconButton(onClick = { showSortMenu = true }) { // Öffnet das Menü
                             Icon(
-                                imageVector = Icons.Filled.MoreVert, // 3-Punkte-Icon
-                                contentDescription = "Sortoptions",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer // Passende Farbe zur AppBar
+                                imageVector = Icons.Filled.Sort, // Icon bleibt gleich
+                                contentDescription = "Sortierkriterium wählen" // Beschreibung angepasst
                             )
                         }
-                        // Dropdown-Menü für Sortieroptionen
                         DropdownMenu(
                             expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false } // Schließt Menü bei Klick daneben
+                            onDismissRequest = { showSortMenu = false }
                         ) {
-                            // --- GEÄNDERT: Menüpunkte mit Umschaltlogik ---
+                            // Menüpunkte ändern NUR den Typ, Richtung wird vom anderen Button gesteuert
+                            // (Die changeSortOrder Funktion behält die aktuelle Richtung bei)
                             DropdownMenuItem(
-                                text = { Text("Sort by Name") },
+                                text = { Text("Name") }, // Nur noch Typ auswählen
                                 onClick = {
-                                    // Wenn bereits nach Name sortiert, Richtung umschalten, sonst ASC starten
-                                    val newDirection = if (uiState.currentSortType == SortType.NAME) uiState.currentSortDirection.toggle() else SortDirection.ASCENDING
-                                    viewModel.changeSortOrder(SortType.NAME, newDirection)
-                                    showSortMenu = false // Menü nach Auswahl schließen
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Sort by Wait Time") },
-                                onClick = {
-                                    // Wenn bereits nach Zeit sortiert, Richtung umschalten, sonst ASC starten
-                                    val newDirection = if (uiState.currentSortType == SortType.WAIT_TIME) uiState.currentSortDirection.toggle() else SortDirection.ASCENDING
-                                    viewModel.changeSortOrder(SortType.WAIT_TIME, newDirection)
+                                    // Setzt Typ auf NAME, behält aktuelle Richtung bei
+                                    viewModel.changeSortOrder(SortType.NAME, uiState.currentSortDirection)
                                     showSortMenu = false
                                 }
                             )
-                            // TODO: Hier könnte Sortierung nach Favoriten hinzugefügt werden
+                            DropdownMenuItem(
+                                text = { Text("Wartezeit") }, // Nur noch Typ auswählen
+                                onClick = {
+                                    // Setzt Typ auf WAIT_TIME, behält aktuelle Richtung bei
+                                    viewModel.changeSortOrder(SortType.WAIT_TIME, uiState.currentSortDirection)
+                                    showSortMenu = false
+                                }
+                            )
+                            // Die alten Menüpunkte (Name Z-A, Wartezeit längste) werden NICHT mehr benötigt,
+                            // da die Richtung separat umgeschaltet wird.
                         }
                     }
-                    // --- ENDE Dropdown-Menü ---
+                    // --- ENDE Bestehender Button ---
                 }
             )
         }
     ) { paddingValues ->
+        // Der Aufruf von WaitTimeControl bleibt unverändert
         WaitTimeControl(
             uiState = uiState,
             onRefresh = { viewModel.fetchWaitTimes(isRefresh = true) },
-            // --- HINZUGEFÜGT: Callback für Favoriten übergeben ---
             onFavoriteToggle = { code -> viewModel.toggleFavorite(code) },
-            // --- HINZUGEFÜGT: Callback für Filter übergeben ---
             onFilterOnlyOpenChanged = { enabled -> viewModel.setFilterOnlyOpen(enabled) },
-            modifier = Modifier.padding(paddingValues) // Wichtig: Padding vom Scaffold übernehmen
+            modifier = Modifier.padding(paddingValues)
         )
     }
 }
