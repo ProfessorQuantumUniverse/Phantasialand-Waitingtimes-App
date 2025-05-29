@@ -2,6 +2,15 @@
 
 A simple Android app for displaying current wait times for attractions at Phantasialand Theme Park. It helps visitors better plan their day at the park by retrieving live data (where available) and offering various viewing and organization options.
 
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+     alt="Get it on F-Droid"
+     height="80">](https://f-droid.org/packages/com.quantum_prof.phantalandwaittimes/)
+[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
+     alt="Get it on Google Play"
+     height="80">](https://play.google.com/store/apps/details?id=com.quantum_prof.phantalandwaittimes)
+
+Or download the latest APK from the [Releases Section](https://github.com/ProfessorQuantumUniverse/Phantasialand-Waitingtimes-App/releases/latest).
+
 ## ✨ Features
 
 * **Current Wait Times:** Displays wait times reported by the data source.
