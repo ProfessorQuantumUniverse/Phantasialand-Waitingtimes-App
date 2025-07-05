@@ -20,6 +20,7 @@ object StorageModule {
 
     // Stelle sicher, dass DIESE ZEILE existiert und korrekt ist:
     const val KEY_FAVORITE_CODES = "favorite_attraction_codes"
+    const val KEY_WAIT_TIME_ALERTS = "wait_time_alerts"
 
     @Provides
     @Singleton

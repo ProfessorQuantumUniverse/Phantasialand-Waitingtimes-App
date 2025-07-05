@@ -24,11 +24,11 @@ class WaitTimeRepository @Inject constructor(
 ) {
 
     // --- GEÄNDERT: Rückgabetyp ist Result<WaitTimeResult> ---
-    suspend fun getPhantasialandWaitTimes(): Result<WaitTimeResult> {
+    suspend fun getPhantasialandWaitTimes(forceRefresh: Boolean = false): Result<WaitTimeResult> {
         return withContext(Dispatchers.IO) {
             try {
                 // 1. Versuche, Daten von der API zu holen
-                Log.d("Repository", "--> Versuche API-Aufruf...")
+                Log.d("Repository", "--> Versuche API-Aufruf... (forceRefresh=$forceRefresh)")
                 val freshWaitTimes = apiService.getWaitTimes()
                 Log.d("Repository", "<-- API-Aufruf erfolgreich (${freshWaitTimes.size} Elemente).")
 
@@ -44,18 +44,24 @@ class WaitTimeRepository @Inject constructor(
                 // API-Aufruf fehlgeschlagen
                 Log.w("Repository", "<-- API-Aufruf fehlgeschlagen!", apiException)
 
-                // 4. Versuche, Daten aus dem Cache zu laden
+                // 4. Wenn forceRefresh = true, gib den Fehler direkt zurück, ohne Cache zu verwenden
+                if (forceRefresh) {
+                    Log.d("Repository", "Force refresh aktiviert - gebe API-Fehler zurück ohne Cache.")
+                    return@withContext Result.failure(apiException)
+                }
+
+                // 5. Versuche, Daten aus dem Cache zu laden (nur wenn nicht forceRefresh)
                 Log.d("Repository", "--> Versuche aus Cache zu laden...")
                 val cachedData = loadFromCache() // Ruft die unten definierte Funktion auf
 
                 if (cachedData != null) {
                     Log.d("Repository", "<-- Daten aus Cache geladen (${cachedData.first.size} Elemente).")
-                    // 5. Gib Cache-Daten zurück (isFromCache = true)
+                    // 6. Gib Cache-Daten zurück (isFromCache = true)
                     // cachedData.first ist die Liste, cachedData.second der Timestamp (hier nicht direkt benötigt)
                     Result.success(cachedData.first to true)
                 } else {
                     Log.e("Repository", "<-- Kein Cache verfügbar oder Fehler beim Laden. Gebe API-Fehler zurück.")
-                    // 6. Kein Cache vorhanden oder Fehler beim Parsen, gib den ursprünglichen API-Fehler zurück
+                    // 7. Kein Cache vorhanden oder Fehler beim Parsen, gib den ursprünglichen API-Fehler zurück
                     Result.failure(apiException)
                 }
             }

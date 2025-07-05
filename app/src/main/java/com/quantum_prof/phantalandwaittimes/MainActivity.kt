@@ -1,85 +1,103 @@
 package com.quantum_prof.phantalandwaittimes
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward // NEU: Import für Sortierrichtung
-import androidx.compose.material.icons.filled.ArrowUpward   // NEU: Import für Sortierrichtung
-import androidx.compose.material.icons.filled.MoreVert     // NEU: Import für 3-Punkte-Menü
-import androidx.compose.material.icons.filled.Star         // NEU: Import für gefüllten Stern
-import androidx.compose.material.icons.outlined.StarBorder // NEU: Import für leeren Stern
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale // NEU: Import für Bildskalierung
-import androidx.compose.ui.res.painterResource // NEU: Import für Drawable-Ressourcen
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.quantum_prof.phantalandwaittimes.data.AttractionWaitTime
-import com.quantum_prof.phantalandwaittimes.ui.theme.PhantasialandWaitTimesTheme
-// Importiere ViewModel und UiState (Pfad ggf. anpassen)
+import com.quantum_prof.phantalandwaittimes.ui.theme.*
+import com.quantum_prof.phantalandwaittimes.ui.theme.components.*
 import com.quantum_prof.phantalandwaittimes.ui.theme.main.MainViewModel
 import com.quantum_prof.phantalandwaittimes.ui.theme.main.SortDirection
 import com.quantum_prof.phantalandwaittimes.ui.theme.main.SortType
 import com.quantum_prof.phantalandwaittimes.ui.theme.main.WaitTimeUiState
-// Importiere die Farbdefinitionen
-import com.quantum_prof.phantalandwaittimes.ui.theme.WaitTimeLong
-import com.quantum_prof.phantalandwaittimes.ui.theme.WaitTimeMedium
-import com.quantum_prof.phantalandwaittimes.ui.theme.WaitTimeShort
-import com.quantum_prof.phantalandwaittimes.ui.theme.WaitTimeVeryLong
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.MutableStateFlow // Für DummyViewModel in Preview
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
-import com.quantum_prof.phantalandwaittimes.R // <-- ERSETZE mit deinem echten Paketnamen!
-import androidx.compose.material.icons.filled.ArrowDownward // Pfeil nach unten
-import androidx.compose.material.icons.filled.ArrowUpward   // Pfeil nach oben
-import androidx.compose.material.icons.filled.Sort
 
-@AndroidEntryPoint // Hilt Einstiegspunkt
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isGranted) {
+            // Notifications disabled, but app continues to work
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // enableEdgeToEdge() // Kann aktiviert werden für Vollbild-Layout
+        checkNotificationPermission()
+
         setContent {
-            PhantasialandWaitTimesTheme { // Dein Material You Theme
+            PhantasialandWaitTimesTheme {
                 WaitTimeApp()
+            }
+        }
+    }
+
+    private fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // Permission already granted - no action needed
+                }
+                else -> {
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
         }
     }
 }
 
-// --- NEU: Hilfsfunktion für Icon Mapping ---
-@DrawableRes // Zeigt an, dass die Funktion eine Drawable Resource ID zurückgibt
+@DrawableRes
 fun getAttractionIconResId(code: String): Int {
-    // Hier Logik hinzufügen, um Code oder Namen zu mappen
-    // TODO: Diese Zuordnung MUSS überprüft und an die ECHTEN Phantasialand-Codes angepasst werden!
     return when (code) {
-        // Hauptachterbahnen (Beispielcodes - ANPASSEN!)
-        "3136", "3137", "3532", "3235", "3630", "3539", "3733" -> R.drawable.ic_coaster // Taron, Raik, Mamba, Colorado, Winjas, Crazy Bats, F.L.Y.
-        // Wasserbahnen (Beispielcodes - ANPASSEN!)
-        "3238", "3139", "3735" -> R.drawable.ic_waterride // Chiapas, River Quest, Wakobato
-        // Shows / Indoor Dark Rides (Beispielcodes - ANPASSEN!)
-        "34", "3431", "3432" -> R.drawable.ic_show // Maus, Feng Ju, Geister Rikscha
-        // Kinderfahrten / Ruhigere Fahrten (Beispiele - ANPASSEN!)
-        "31", "32", "33", "35", "3632", "3633", "3634", "3635", "3638", "3730", "3731", "3732" -> R.drawable.ic_kid_ride // Viele kleine Attraktionen
-        // Default für alles andere
-        else -> R.drawable.ic_default_ride // Fallback-Icon
+        "3136", "3137", "3532", "3235", "3630", "3539", "3733" -> R.drawable.ic_coaster
+        "3238", "3139", "3735" -> R.drawable.ic_waterride
+        "34", "3431", "3432" -> R.drawable.ic_show
+        "31", "32", "33", "35", "3632", "3633", "3634", "3635", "3638", "3730", "3731", "3732" -> R.drawable.ic_kid_ride
+        else -> R.drawable.ic_default_ride
     }
 }
 
@@ -87,649 +105,395 @@ fun getAttractionIconResId(code: String): Int {
 @Composable
 fun WaitTimeApp(viewModel: MainViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    // Zustand für die Sichtbarkeit des Sortiermenüs
     var showSortMenu by remember { mutableStateOf(false) }
+    var showNotificationDialogFor by remember { mutableStateOf<AttractionWaitTime?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Phantasialand waiting times") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                actions = {
-                    // --- NEU: Button zum Umschalten der Richtung ---
-                    IconButton(onClick = { viewModel.toggleSortDirection() }) { // Ruft neue VM-Funktion auf
-                        Icon(
-                            // Wählt Icon basierend auf aktueller Richtung
-                            imageVector = if (uiState.currentSortDirection == SortDirection.ASCENDING)
-                                Icons.Filled.ArrowUpward // Pfeil hoch bei ASC
-                            else
-                                Icons.Filled.ArrowDownward, // Pfeil runter bei DESC
-                            contentDescription = "Sortierrichtung wechseln"
-                        )
-                    }
-                    // --- ENDE Neuer Button ---
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Original Hintergrundbild zurück!
+        Image(
+            painter = painterResource(id = R.drawable.background_park),
+            contentDescription = "Park Hintergrund",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
 
-                    // --- Bestehender Button für SortierTYP-Auswahl ---
-                    Box { // Box als Anker für das DropdownMenu
-                        IconButton(onClick = { showSortMenu = true }) { // Öffnet das Menü
-                            Icon(
-                                imageVector = Icons.Filled.Sort, // Icon bleibt gleich
-                                contentDescription = "Sortierkriterium wählen" // Beschreibung angepasst
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false }
-                        ) {
-                            // Menüpunkte ändern NUR den Typ, Richtung wird vom anderen Button gesteuert
-                            // (Die changeSortOrder Funktion behält die aktuelle Richtung bei)
-                            DropdownMenuItem(
-                                text = { Text("Name") }, // Nur noch Typ auswählen
-                                onClick = {
-                                    // Setzt Typ auf NAME, behält aktuelle Richtung bei
-                                    viewModel.changeSortOrder(SortType.NAME, uiState.currentSortDirection)
-                                    showSortMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Wartezeit") }, // Nur noch Typ auswählen
-                                onClick = {
-                                    // Setzt Typ auf WAIT_TIME, behält aktuelle Richtung bei
-                                    viewModel.changeSortOrder(SortType.WAIT_TIME, uiState.currentSortDirection)
-                                    showSortMenu = false
-                                }
-                            )
-                            // Die alten Menüpunkte (Name Z-A, Wartezeit längste) werden NICHT mehr benötigt,
-                            // da die Richtung separat umgeschaltet wird.
-                        }
+        // Halbtransparente Ebene für bessere Lesbarkeit
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Background.copy(alpha = 0.6f))
+        )
+
+        // Main content
+        Scaffold(
+            modifier = Modifier.statusBarsPadding(),
+            topBar = {
+                ImprovedTopAppBar(
+                    uiState = uiState,
+                    showSortMenu = showSortMenu,
+                    onShowSortMenuChange = { showSortMenu = it },
+                    onSortDirectionToggle = { viewModel.toggleSortDirection() },
+                    onSortTypeChange = { sortType ->
+                        viewModel.changeSortOrder(sortType, uiState.currentSortDirection)
                     }
-                    // --- ENDE Bestehender Button ---
+                )
+            },
+            containerColor = Color.Transparent
+        ) { paddingValues ->
+            WaitTimeContent(
+                uiState = uiState,
+                onRefresh = { viewModel.fetchWaitTimes(isRefresh = true) },
+                onFavoriteToggle = { code -> viewModel.toggleFavorite(code) },
+                onFilterOnlyOpenChanged = { enabled -> viewModel.setFilterOnlyOpen(enabled) },
+                onAddAlertClicked = { attraction -> showNotificationDialogFor = attraction },
+                onRemoveAlert = { code -> viewModel.removeAlert(code) },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+
+        // Alert dialog
+        showNotificationDialogFor?.let { attraction ->
+            val currentAlert = uiState.activeAlerts.find { it.attractionCode == attraction.code }
+            WaitTimeAlertDialog(
+                attraction = attraction,
+                currentAlert = currentAlert,
+                onDismiss = { showNotificationDialogFor = null },
+                onSetAlert = { targetTime ->
+                    viewModel.addAlert(attraction, targetTime)
+                },
+                onRemoveAlert = {
+                    viewModel.removeAlert(attraction.code)
                 }
             )
         }
-    ) { paddingValues ->
-        // Der Aufruf von WaitTimeControl bleibt unverändert
-        WaitTimeControl(
-            uiState = uiState,
-            onRefresh = { viewModel.fetchWaitTimes(isRefresh = true) },
-            onFavoriteToggle = { code -> viewModel.toggleFavorite(code) },
-            onFilterOnlyOpenChanged = { enabled -> viewModel.setFilterOnlyOpen(enabled) },
-            modifier = Modifier.padding(paddingValues)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ImprovedTopAppBar(
+    uiState: WaitTimeUiState,
+    showSortMenu: Boolean,
+    onShowSortMenuChange: (Boolean) -> Unit,
+    onSortDirectionToggle: () -> Unit,
+    onSortTypeChange: (SortType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Schlichte Material 3 TopAppBar
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        TopAppBar(
+            title = {
+                Text(
+                    "Phantasialand Queue Times",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            actions = {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    IconButton(
+                        onClick = { onShowSortMenuChange(!showSortMenu) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Sort,
+                            contentDescription = "Sort",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = showSortMenu,
+                    onDismissRequest = { onShowSortMenuChange(false) }
+                ) {
+                    // Sort Type Options
+                    SortType.values().forEach { sortType ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    when (sortType) {
+                                        SortType.NAME -> "By name"
+                                        SortType.WAIT_TIME -> "By time"
+                                    }
+                                )
+                            },
+                            onClick = {
+                                onSortTypeChange(sortType)
+                                onShowSortMenuChange(false)
+                            }
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    // Sort Direction Toggle
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                when (uiState.currentSortDirection) {
+                                    SortDirection.ASCENDING -> "Ascending"
+                                    SortDirection.DESCENDING -> "Descending"
+                                }
+                            )
+                        },
+                        onClick = {
+                            onSortDirectionToggle()
+                        }
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                titleContentColor = MaterialTheme.colorScheme.onSurface
+            )
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WaitTimeControl(
+fun WaitTimeContent(
     uiState: WaitTimeUiState,
     onRefresh: () -> Unit,
-    // --- HINZUGEFÜGT: Callbacks ---
     onFavoriteToggle: (String) -> Unit,
     onFilterOnlyOpenChanged: (Boolean) -> Unit,
+    onAddAlertClicked: (AttractionWaitTime) -> Unit,
+    onRemoveAlert: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Zeige Refresh-Indikator nur, wenn aktiv geladen wird UND schon Daten da sind (Pull-to-Refresh)
-    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = uiState.isLoading && uiState.waitTimes.isNotEmpty())
+    val pullToRefreshState = rememberPullToRefreshState()
 
-    SwipeRefresh(
-        state = swipeRefreshState,
-        onRefresh = onRefresh,
-        modifier = modifier.fillMaxSize()
-    ) {
-        // --- HINZUGEFÜGT: Box für Hintergrund und Inhalt ---
-        Box(modifier = Modifier.fillMaxSize()) {
-
-            // 1. Hintergrundbild
-            Image(
-                painter = painterResource(id = R.drawable.background_park), // DEIN BILDNAME HIER
-                contentDescription = "Park Hintergrund",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop // Bild zuschneiden, um den Bereich zu füllen
+    Column(modifier = modifier.fillMaxSize()) {
+        // Filter controls
+        if (uiState.waitTimes.isNotEmpty() || (uiState.error == null && !uiState.isLoading)) {
+            ModernFilterControls(
+                filterOnlyOpen = uiState.filterOnlyOpen,
+                onFilterOnlyOpenChanged = onFilterOnlyOpenChanged
             )
+        }
 
-            // 2. Semi-transparenter Overlay für Lesbarkeit
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    // Nutze Hintergrundfarbe des Themes mit reduzierter Deckkraft
-                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.75f))
-            )
+        // Main content
+        when {
+            uiState.error != null && uiState.waitTimes.isEmpty() && !uiState.isLoading -> {
+                ModernErrorView(
+                    errorMessage = uiState.error,
+                    onRetry = onRefresh,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
-            // 3. Inhalt (Filter, Liste, Fehler, Laden) kommt jetzt hier rein
-            Box(modifier = Modifier.fillMaxSize()) { // Innere Box für Inhalt
+            uiState.waitTimes.isEmpty() && !uiState.isLoading -> {
+                ModernEmptyView(
+                    title = if (uiState.filterOnlyOpen) "All Attractions are closed!" else "No Data Available",
+                    subtitle = "Try refreshing or later again. Check your internet connection.",
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
-                // --- GEÄNDERT: Column für Filter + Rest ---
-                Column(modifier = Modifier.fillMaxSize()) {
+            uiState.isLoading && uiState.waitTimes.isEmpty() -> {
+                ModernLoadingView(
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
-                    // --- HINZUGEFÜGT: Filter Controls ---
-                    // Nur anzeigen, wenn es Daten gibt oder potenziell geben könnte
-                    if (uiState.waitTimes.isNotEmpty() || (uiState.error == null && !uiState.isLoading)) {
-                        FilterControls(
-                            filterOnlyOpen = uiState.filterOnlyOpen,
-                            onFilterOnlyOpenChanged = onFilterOnlyOpenChanged
-                        )
-                    }
-                    // --- ENDE Filter Controls ---
-
-                    // Fehler anzeigen (nur wenn keine Daten da sind und nicht initial geladen wird)
-                    if (uiState.error != null && uiState.waitTimes.isEmpty() && !uiState.isLoading) {
-                        ErrorView(
-                            errorMessage = uiState.error,
-                            onRetry = onRefresh,
-                            modifier = Modifier.weight(1f).padding(16.dp) // Füllt restlichen Platz
-                        )
-                    }
-                    // Hauptinhalt (Liste oder Leere-Ansicht)
-                    else {
-                        // Leere Ansicht (Keine Daten, kein Laden, kein Fehler)
-                        if (uiState.waitTimes.isEmpty() && !uiState.isLoading && uiState.error == null) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.weight(1f).padding(16.dp) // Füllt restlichen Platz
-                            ) {
-                                Text(
-                                    // Text anpassen je nach Filterstatus
-                                    text = if (uiState.filterOnlyOpen) "No open attractions found." else "No waitingtimes available",
-                                    textAlign = TextAlign.Center,
-                                    // Textfarbe für Kontrast auf Overlay
-                                    color = MaterialTheme.colorScheme.onSurface
+            else -> {
+                PullToRefreshBox(
+                    isRefreshing = uiState.isLoading,
+                    onRefresh = onRefresh,
+                    state = pullToRefreshState,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    LazyColumn(
+                        contentPadding = PaddingValues(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (uiState.lastUpdated > 0) {
+                            item {
+                                ModernLastUpdatedHeader(
+                                    timestamp = uiState.lastUpdated,
+                                    isOffline = uiState.isOfflineData
                                 )
                             }
                         }
-                        // Liste anzeigen (wenn Daten vorhanden)
-                        else if (uiState.waitTimes.isNotEmpty()) {
-                            WaitTimeList(
-                                waitTimes = uiState.waitTimes,
-                                lastUpdated = uiState.lastUpdated,
-                                isOffline = uiState.isOfflineData,
-                                showErrorSnackbar = uiState.error != null && !uiState.isOfflineData, // Snackbar nur bei Online-Fehler nach erfolgreichem Laden
-                                // --- HINZUGEFÜGT: Favoriten & Callback übergeben ---
-                                favoriteCodes = uiState.favoriteCodes,
-                                onFavoriteToggle = onFavoriteToggle,
-                                modifier = Modifier.weight(1f) // Füllt restlichen Platz
+
+                        items(uiState.waitTimes, key = { it.code }) { attraction ->
+                            WaitTimeCard(
+                                attraction = attraction,
+                                isFavorite = attraction.code in uiState.favoriteCodes,
+                                hasAlert = uiState.activeAlerts.any { it.attractionCode == attraction.code },
+                                onFavoriteToggle = { onFavoriteToggle(attraction.code) },
+                                onAddAlert = { onAddAlertClicked(attraction) },
+                                onRemoveAlert = { onRemoveAlert(attraction.code) }
                             )
                         }
-                        // Initialer Ladeindikator (im leeren Zustand)
-                        else if (uiState.isLoading && uiState.waitTimes.isEmpty() && uiState.error == null) {
-                            Box(
-                                modifier = Modifier.weight(1f), // Füllt restlichen Platz
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        }
-                        // Fallback für leeren Raum (sollte selten auftreten)
-                        else {
-                            Spacer(modifier = Modifier.weight(1f))
+
+                        item {
+                            ModernFooter()
                         }
                     }
-                } // Ende Column
-            } // Ende innerer Content-Box
-        } // Ende äußerer Hintergrund-Box
-    } // Ende SwipeRefresh
+                }
+            }
+        }
+    }
 }
 
-// --- NEU: Composable für Filter-Steuerelemente ---
 @Composable
-fun FilterControls(
+fun ModernFilterControls(
     filterOnlyOpen: Boolean,
     onFilterOnlyOpenChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    // Schlichte Material 3 Card
+    Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.End // Schalter nach rechts
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Text(
-            text = "Show only opened",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f), // Nimmt Platz links
-            color = MaterialTheme.colorScheme.onSurface // Kontrast zum Overlay
-        )
-        Switch(
-            checked = filterOnlyOpen,
-            onCheckedChange = onFilterOnlyOpenChanged,
-            colors = SwitchDefaults.colors( // Optionale Farbgebung
-                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                checkedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                uncheckedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.FilterList,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
             )
-        )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = "Show only open attractions",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Switch(
+                checked = filterOnlyOpen,
+                onCheckedChange = onFilterOnlyOpenChanged
+            )
+        }
     }
 }
 
 @Composable
-fun WaitTimeList(
-    waitTimes: List<AttractionWaitTime>,
-    lastUpdated: Long,
+fun ModernLastUpdatedHeader(
+    timestamp: Long,
     isOffline: Boolean,
-    showErrorSnackbar: Boolean,
-    // --- HINZUGEFÜGT: Parameter für Favoriten ---
-    favoriteCodes: Set<String>,
-    onFavoriteToggle: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // Zeige Snackbar bei Fehler im Hintergrund (unverändert)
-    LaunchedEffect(showErrorSnackbar) {
-        if (showErrorSnackbar) {
-            snackbarHostState.showSnackbar(
-                message = "Error loading data",
-                duration = SnackbarDuration.Short
-            )
-        }
-    }
-
-    // --- GEÄNDERT: Innerer Scaffold mit transparenter Farbe ---
-    Scaffold(
-        modifier = modifier,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.Transparent // Wichtig, damit der Hintergrund durchscheint
-    ) { innerPadding ->
-        LazyColumn(
-            // Padding vom inneren Scaffold übernehmen + zusätzliches Padding
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = innerPadding.calculateTopPadding() + 8.dp, // Platz für Header etc.
-                bottom = innerPadding.calculateBottomPadding() + 8.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(8.dp) // Abstand zwischen Elementen
-        ) {
-            // Header für "Zuletzt aktualisiert" / Offline-Hinweis
-            if (lastUpdated > 0) {
-                item {
-                    LastUpdatedHeader(timestamp = lastUpdated, isOffline = isOffline)
-                    // Kein Spacer hier, da Arrangement.spacedBy verwendet wird
-                }
-            }
-
-            // --- GEÄNDERT: Wartezeit-Items mit Favoriten-Info ---
-            items(waitTimes, key = { it.code }) { attraction ->
-                WaitTimeItem(
-                    attraction = attraction,
-                    isFavorite = attraction.code in favoriteCodes, // Prüfe, ob Favorit
-                    onFavoriteToggle = onFavoriteToggle // Callback weitergeben
-                )
-            }
-        }
-    }
-}
-
-// Behalte deine detaillierte LastUpdatedHeader-Logik bei, nur der Offline-Teil wird genutzt
-@Composable
-fun LastUpdatedHeader(timestamp: Long, isOffline: Boolean) {
     val minutesAgo = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - timestamp)
     val timeFormatted = SimpleDateFormat("HH:mm", Locale.GERMANY).format(Date(timestamp))
-    val dateFormatted = SimpleDateFormat("dd.MM.", Locale.GERMANY).format(Date(timestamp))
 
     val ageText = when {
-        minutesAgo < 1 -> "Just right now"
-        minutesAgo == 1L -> "1 minute ago"
-        minutesAgo < 60 -> " $minutesAgo minutes ago"
+        minutesAgo < 1 -> "Just now"
+        minutesAgo == 1L -> "1 Minute ago"
+        minutesAgo < 60 -> " $minutesAgo Minutes ago"
         minutesAgo < 120 -> "1 hour ago"
-        minutesAgo < (24 * 60) -> "Ca. ${TimeUnit.MINUTES.toHours(minutesAgo)} hours ago"
-        else -> "on $dateFormatted"
+        else -> " ${TimeUnit.MINUTES.toHours(minutesAgo)} hours ago"
     }
 
-    val prefix = if (isOffline) "Offline-Data" else "Refreshed"
-    val fullText = "$prefix $ageText ($timeFormatted )"
-
-    Text(
-        text = fullText,
-        style = MaterialTheme.typography.labelSmall,
-        color = if (isOffline) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        textAlign = TextAlign.Center
-    )
-}
-
-
-@Composable
-fun WaitTimeItem(
-    attraction: AttractionWaitTime,
-    // --- HINZUGEFÜGT: Parameter für Favoriten ---
-    isFavorite: Boolean,
-    onFavoriteToggle: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
+    // Schlichte Material 3 Card
     Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), // Etwas mehr Schatten
-        // Leicht transparente Karte, um den Hintergrund durchscheinen zu lassen
-        // Unterschiedliche Transparenz für geschlossene Elemente (optional)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = (if (attraction.status.lowercase() == "closed") MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface)
-                .copy(alpha = 0.85f) // Anpassen nach Geschmack
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        // --- GEÄNDERT: Row Layout für Icon, Name, Zeit, Favorit ---
         Row(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 12.dp) // Horizontal etwas weniger Padding
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start // Von links beginnen
+            horizontalArrangement = Arrangement.Center
         ) {
-            // --- HINZUGEFÜGT: Icon für Attraktionstyp ---
             Icon(
-                painter = painterResource(id = getAttractionIconResId(attraction.code)),
-                contentDescription = "Attraction Type",
-                // Farbe nach Geschmack anpassen, z.B. Primary oder OnSurfaceVariant
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp) // Größe des Icons
+                imageVector = if (isOffline) Icons.Default.CloudOff else Icons.Default.CloudDone,
+                contentDescription = null,
+                tint = if (isOffline) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
             )
-            Spacer(modifier = Modifier.width(10.dp)) // Abstand Icon <-> Name
 
-            // Name (nimmt flexiblen Platz ein)
+            Spacer(modifier = Modifier.width(8.dp))
+
             Text(
-                text = attraction.name,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f) // Nimmt verfügbaren Platz
+                text = "${if (isOffline) "Offline" else "Refreshed"} $ageText ($timeFormatted)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.width(8.dp)) // Abstand Name <-> Zeit
-
-            // Wartezeit-Status (deine bestehende Logik)
-            WaitTimeStatusText(attraction = attraction)
-
-            // --- HINZUGEFÜGT: Favoriten-Button ---
-            IconButton(
-                onClick = { onFavoriteToggle(attraction.code) },
-                modifier = Modifier
-                    .size(36.dp) // Kleinere Klickfläche als Standard
-                    .padding(start = 4.dp) // Abstand Zeit <-> Stern
-            ) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                    contentDescription = if (isFavorite) "Remove as Favorit" else "Add as Favorit",
-                    // Farbe für den Stern anpassen
-                    tint = if (isFavorite) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline
-                )
-            }
-            // --- ENDE Favoriten-Button ---
         }
     }
 }
 
-// Deine bestehende Logik für die Wartezeit-Anzeige und Farben
 @Composable
-fun WaitTimeStatusText(attraction: AttractionWaitTime, modifier: Modifier = Modifier) {
-    val statusText: String
-    val fontWeight: FontWeight
-    val textColor: Color
+fun ModernFooter(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val apiUrl = "https://www.wartezeiten.app/"
 
-    when (attraction.status.lowercase()) {
-        "opened" -> {
-            statusText = "${attraction.waitTimeMinutes} Min."
-            fontWeight = FontWeight.Bold
-            textColor = when {
-                attraction.waitTimeMinutes >= 75 -> WaitTimeVeryLong
-                attraction.waitTimeMinutes >= 50 -> WaitTimeLong
-                attraction.waitTimeMinutes >= 25 -> WaitTimeMedium
-                else -> WaitTimeShort
-            }
-        }
-        "closed" -> {
-            statusText = "Closed" // Kürzer für mehr Platz
-            fontWeight = FontWeight.Normal
-            textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) // Etwas ausgegraut
-        }
-        // Optional: Bessere Darstellung für andere Status (z.B. Wartung)
-        "refurbishment" -> {
-            statusText = "Maintenance"
-            fontWeight = FontWeight.Normal
-            textColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-        }
-        else -> { // Fallback
-            statusText = attraction.status.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.GERMANY) else it.toString() }
-            fontWeight = FontWeight.Normal
-            textColor = MaterialTheme.colorScheme.onSurfaceVariant
-        }
-    }
-
-    Text(
-        text = statusText,
-        style = MaterialTheme.typography.bodyLarge,
-        fontWeight = fontWeight,
-        color = textColor,
-        textAlign = TextAlign.End,
-        modifier = modifier.widthIn(min = 55.dp) // Mindestbreite für bessere Ausrichtung
-    )
-}
-
-// Deine bestehende ErrorView
-@Composable
-fun ErrorView(errorMessage: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize(), // Nimmt normalerweise Platz über .weight(1f)
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    // Schlichte Material 3 Card für Footer
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(apiUrl))
+                try {
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Text(
-            text = "Oops!", // Angepasster Titel
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.error
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = errorMessage,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onErrorContainer // Besserer Kontrast bei Error-Container
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Retry")
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Data provided by",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "wartezeiten.app",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.primary,
+                textDecoration = TextDecoration.Underline
+            )
         }
     }
 }
-
-// --- Hilfsfunktionen ---
-
-// Helper zum Umschalten der Sortierrichtung (aus Anleitung übernommen)
-fun SortDirection.toggle(): SortDirection {
-    return if (this == SortDirection.ASCENDING) SortDirection.DESCENDING else SortDirection.ASCENDING
-}
-
-// --- PREVIEWS (angepasst für neue Features) ---
-
-// Beispieldaten für Previews
-val previewSampleData = listOf(
-    AttractionWaitTime(code = "3136", name = "Taron", waitTimeMinutes = 80, status = "opened"),
-    AttractionWaitTime(code = "3532", name = "Black Mamba", waitTimeMinutes = 35, status = "opened"),
-    AttractionWaitTime(code = "3238", name = "Chiapas", waitTimeMinutes = 0, status = "closed"),
-    AttractionWaitTime(code = "34", name = "Maus au Chocolat", waitTimeMinutes = 45, status = "opened"),
-    AttractionWaitTime(code = "3139", name = "River Quest", waitTimeMinutes = 999, status = "refurbishment"), // Beispiel Wartung
-)
-val previewSampleFavorites = setOf("3136", "34") // Taron & Maus sind Favoriten
-
-@Preview(showBackground = true, name = "Item - Favorit")
-@Composable
-fun WaitTimeItemPreviewFavorite() {
-    PhantasialandWaitTimesTheme {
-        WaitTimeItem(
-            attraction = previewSampleData[0], // Taron
-            isFavorite = true,
-            onFavoriteToggle = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Item - Nicht Favorit")
-@Composable
-fun WaitTimeItemPreviewNotFavorite() {
-    PhantasialandWaitTimesTheme {
-        WaitTimeItem(
-            attraction = previewSampleData[1], // Black Mamba
-            isFavorite = false,
-            onFavoriteToggle = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Item - Geschlossen")
-@Composable
-fun WaitTimeItemPreviewClosed() {
-    PhantasialandWaitTimesTheme {
-        WaitTimeItem(
-            attraction = previewSampleData[2], // Chiapas
-            isFavorite = false,
-            onFavoriteToggle = {}
-        )
-    }
-}
-
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 640, name = "Liste Online")
-@Composable
-fun WaitTimeListOnlinePreview() {
-    PhantasialandWaitTimesTheme {
-        WaitTimeList(
-            waitTimes = previewSampleData,
-            lastUpdated = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(5),
-            isOffline = false,
-            showErrorSnackbar = false,
-            favoriteCodes = previewSampleFavorites,
-            onFavoriteToggle = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 640, name = "Liste Offline")
-@Composable
-fun WaitTimeListOfflinePreview() {
-    PhantasialandWaitTimesTheme {
-        WaitTimeList(
-            waitTimes = previewSampleData.dropLast(1), // Weniger Daten simulieren
-            lastUpdated = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2),
-            isOffline = true,
-            showErrorSnackbar = true, // Simulieren, dass Update fehlgeschlagen ist
-            favoriteCodes = previewSampleFavorites,
-            onFavoriteToggle = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 640, name = "Control - Filter An")
-@Composable
-fun WaitTimeControlWithFilterPreview() {
-    PhantasialandWaitTimesTheme {
-        // Filtere die Beispieldaten für die Vorschau
-        val filteredData = previewSampleData.filter { it.status.lowercase() == "opened" }
-        WaitTimeControl(
-            uiState = WaitTimeUiState(
-                waitTimes = filteredData, // Zeige nur geöffnete
-                lastUpdated = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(3),
-                filterOnlyOpen = true, // Filter ist an
-                favoriteCodes = previewSampleFavorites,
-                isOfflineData = false,
-                isLoading = false,
-                error = null
-            ),
-            onRefresh = {},
-            onFavoriteToggle = {},
-            onFilterOnlyOpenChanged = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 640, name = "Control - Filter Aus")
-@Composable
-fun WaitTimeControlWithoutFilterPreview() {
-    PhantasialandWaitTimesTheme {
-        WaitTimeControl(
-            uiState = WaitTimeUiState(
-                waitTimes = previewSampleData, // Alle anzeigen
-                lastUpdated = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(3),
-                filterOnlyOpen = false, // Filter ist aus
-                favoriteCodes = previewSampleFavorites,
-                isOfflineData = false,
-                isLoading = false,
-                error = null
-            ),
-            onRefresh = {},
-            onFavoriteToggle = {},
-            onFilterOnlyOpenChanged = {}
-        )
-    }
-}
-
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 640, name = "Control - Loading")
-@Composable
-fun WaitTimeControlLoadingPreview() {
-    PhantasialandWaitTimesTheme {
-        WaitTimeControl(
-            uiState = WaitTimeUiState(isLoading = true),
-            onRefresh = {},
-            onFavoriteToggle = {},
-            onFilterOnlyOpenChanged = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 640, name = "Control - Error")
-@Composable
-fun WaitTimeControlErrorPreview() {
-    PhantasialandWaitTimesTheme {
-        WaitTimeControl(
-            uiState = WaitTimeUiState(error = "Netzwerkfehler.", waitTimes = emptyList()),
-            onRefresh = {},
-            onFavoriteToggle = {},
-            onFilterOnlyOpenChanged = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 640, name = "Control - Empty")
-@Composable
-fun WaitTimeControlEmptyPreview() {
-    PhantasialandWaitTimesTheme {
-        WaitTimeControl(
-            uiState = WaitTimeUiState(isLoading = false, waitTimes = emptyList(), error = null),
-            onRefresh = {},
-            onFavoriteToggle = {},
-            onFilterOnlyOpenChanged = {}
-        )
-    }
-}
-
-// Dummy-Datenklassen und ViewModel für den Fall, dass die echten nicht verfügbar sind
-// oder Hilt in Previews Probleme macht. Kommentiere sie aus, wenn du Hilt verwendest und es funktioniert.
-/*
-data class AttractionWaitTime(val code: String, val name: String, val waitTimeMinutes: Int, val status: String)
-data class WaitTimeUiState(
-    val isLoading: Boolean = false,
-    val waitTimes: List<AttractionWaitTime> = emptyList(),
-    val error: String? = null,
-    val lastUpdated: Long = 0L,
-    val isOfflineData: Boolean = false,
-    val currentSortType: SortType = SortType.NAME,
-    val currentSortDirection: SortDirection = SortDirection.ASCENDING,
-    val favoriteCodes: Set<String> = emptySet(),
-    val filterOnlyOpen: Boolean = false
-)
-enum class SortType { NAME, WAIT_TIME }
-enum class SortDirection { ASCENDING, DESCENDING }
-
-// Erstelle eine Dummy-ViewModel-Klasse, wenn kein Hilt verwendet wird oder für Previews
-class DummyViewModel {
-     val uiState = MutableStateFlow(WaitTimeUiState(waitTimes = previewSampleData, favoriteCodes = previewSampleFavorites))
-     fun fetchWaitTimes(isRefresh: Boolean = false) {}
-     fun changeSortOrder(newType: SortType, newDirection: SortDirection) {}
-     fun toggleFavorite(code: String) {}
-     fun setFilterOnlyOpen(enabled: Boolean) {}
-}
-// Passe die Preview-Annotation an, falls du DummyViewModel brauchst:
-// @Composable fun WaitTimeApp(viewModel: DummyViewModel = DummyViewModel()) { ... }
-*/

@@ -16,8 +16,8 @@ android {
         applicationId = "com.quantum_prof.phantalandwaittimes" // DEIN PAKETNAME
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "2.0.0" // Version anpassen
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -83,6 +83,11 @@ dependencies {
     kapt("com.google.dagger:hilt-compiler:2.48.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0") // Neueste Version prüfen
 
+    // --- NEU: WorkManager für Hintergrund-Benachrichtigungen ---
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.hilt:hilt-work:1.1.0")
+    kapt("androidx.hilt:hilt-compiler:1.1.0")
+
     // Accompanist SwipeRefresh (Pull-to-Refresh)
     implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0") // Neueste Version prüfen
 
@@ -105,6 +110,12 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     // Icons Extended (enthält viele weitere Icons, inkl. Sort) - Sicher ist sicher
     implementation("androidx.compose.material:material-icons-extended")
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Hilt WorkManager Integration
+    implementation("androidx.hilt:hilt-work:1.1.0")
+    kapt("androidx.hilt:hilt-compiler:1.1.0")
 }
 
 // Hilt Kapt Konfiguration

@@ -4,6 +4,7 @@
 
     <!-- Internet Permission hinzufügen -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:name="com.quantum_prof.phantalandwaittimes.BaseApplication"
