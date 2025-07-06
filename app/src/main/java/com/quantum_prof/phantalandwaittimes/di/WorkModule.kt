@@ -1,7 +1,6 @@
 package com.quantum_prof.phantalandwaittimes.di
 
 import android.content.Context
-import android.content.SharedPreferences
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -9,20 +8,20 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * Dependency Injection Modul für Background-Services
+ * Alternative Implementierung ohne WorkManager-Abhängigkeiten
+ */
 @Module
 @InstallIn(SingletonComponent::class)
-object StorageModule {
+object BackgroundServiceModule {
 
-    const val KEY_FAVORITE_CODES = "favorite_codes"
-    const val KEY_WAIT_TIME_ALERTS = "wait_time_alerts"
-
-    private const val PREFS_NAME = "phantasialand_wait_times_prefs"
-
+    /**
+     * Stellt den Anwendungskontext für Background-Services bereit
+     */
     @Provides
     @Singleton
-    fun provideSharedPreferences(
+    fun provideApplicationContext(
         @ApplicationContext context: Context
-    ): SharedPreferences {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    }
+    ): Context = context
 }

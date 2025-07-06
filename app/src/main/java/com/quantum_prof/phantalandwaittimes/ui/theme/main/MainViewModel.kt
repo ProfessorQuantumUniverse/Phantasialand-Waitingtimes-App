@@ -1,12 +1,14 @@
-package com.quantum_prof.phantalandwaittimes.ui.theme.main // Korrigierter Paketname (ohne .theme)
+package com.quantum_prof.phantalandwaittimes.ui.theme.main
 
-import android.content.SharedPreferences // NEU: Import für SharedPreferences
+import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.quantum_prof.phantalandwaittimes.data.AttractionWaitTime
 import com.quantum_prof.phantalandwaittimes.data.WaitTimeRepository
 import com.quantum_prof.phantalandwaittimes.data.WaitTimeResult
-// NEU: Import für den SharedPreferences Key (Pfad ggf. anpassen)
+import com.quantum_prof.phantalandwaittimes.data.notification.AlertRepository
+import com.quantum_prof.phantalandwaittimes.data.notification.WaitTimeAlert
 import com.quantum_prof.phantalandwaittimes.di.StorageModule.KEY_FAVORITE_CODES
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,11 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import java.util.Locale // Import für CASE_INSENSITIVE_ORDER (bereits vorhanden)
-
-// Enums für Sortierung (bereits vorhanden)
-// enum class SortType { NAME, WAIT_TIME } // Optional: FAVORITE hinzufügen
-// enum class SortDirection { ASCENDING, DESCENDING }
+import java.util.Locale
 
 // --- GEÄNDERT: WaitTimeUiState erweitert ---
 data class WaitTimeUiState(
@@ -32,24 +30,27 @@ data class WaitTimeUiState(
     val isOfflineData: Boolean = false, // Flag für Offline-Daten
     // --- NEU: Status für Favoriten und Filter ---
     val favoriteCodes: Set<String> = emptySet(), // Set der Favoriten-Attraktionscodes
-    val filterOnlyOpen: Boolean = false // Flag, ob nur geöffnete Attraktionen angezeigt werden
+    val filterOnlyOpen: Boolean = false, // Flag, ob nur geöffnete Attraktionen angezeigt werden
+    val activeAlerts: List<WaitTimeAlert> = emptyList()
 )
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val repository: WaitTimeRepository,
     // --- NEU: SharedPreferences injecten ---
-    private val sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences,
+    private val alertRepository: AlertRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WaitTimeUiState())
     val uiState: StateFlow<WaitTimeUiState> = _uiState.asStateFlow()
 
-    // Optional: Zwischenspeicher für die *originalen*, ungefilterten/unsortierten Daten
-    // private var originalFetchedWaitTimes: List<AttractionWaitTime> = emptyList()
+    // --- NEU: Zwischenspeicher für die originalen, ungefilterten Daten ---
+    private var originalFetchedWaitTimes: List<AttractionWaitTime> = emptyList()
 
     init {
         loadFavorites() // Lade Favoriten ZUERST
+        loadAlerts()
         fetchWaitTimes() // Dann lade die Wartezeiten (wendet initiale Filter/Sortierung an)
     }
 
@@ -57,6 +58,32 @@ class MainViewModel @Inject constructor(
     private fun loadFavorites() {
         val favorites = sharedPreferences.getStringSet(KEY_FAVORITE_CODES, emptySet()) ?: emptySet()
         _uiState.update { it.copy(favoriteCodes = favorites) }
+    }
+
+    private fun loadAlerts() {
+        viewModelScope.launch {
+            val alerts = alertRepository.getAlerts()
+            _uiState.update { it.copy(activeAlerts = alerts) }
+        }
+    }
+
+    fun addAlert(attraction: AttractionWaitTime, targetTime: Int) {
+        viewModelScope.launch {
+            val newAlert = WaitTimeAlert(
+                attractionCode = attraction.code,
+                attractionName = attraction.name,
+                targetTime = targetTime
+            )
+            alertRepository.addAlert(newAlert)
+            loadAlerts() // Reload alerts to update UI
+        }
+    }
+
+    fun removeAlert(attractionCode: String) {
+        viewModelScope.launch {
+            alertRepository.removeAlert(attractionCode)
+            loadAlerts() // Reload alerts to update UI
+        }
     }
 
     fun toggleSortDirection() {
@@ -70,10 +97,8 @@ class MainViewModel @Inject constructor(
         // Update die Richtung im State *zuerst*
         _uiState.update { it.copy(currentSortDirection = newDirection) }
 
-        // Wende Filter und die *neue* Sortierung (mit dem *alten* Typ)
-        // auf die *aktuell angezeigte* Liste an
-        applyFiltersAndSorting(_uiState.value.waitTimes) // Einfacher Ansatz
-        // applyFiltersAndSorting(originalFetchedWaitTimes) // Besserer Ansatz
+        // Wende Filter und die *neue* Sortierung auf die ORIGINALEN Daten an
+        applyFiltersAndSorting(originalFetchedWaitTimes)
     }
 
     // --- NEU: Funktion zum Umschalten eines Favoriten ---
@@ -85,17 +110,16 @@ class MainViewModel @Inject constructor(
             currentFavorites + code // Hinzufügen
         }
 
-        // Speichere in SharedPreferences
-        sharedPreferences.edit().putStringSet(KEY_FAVORITE_CODES, newFavorites).apply()
+        // Speichere in SharedPreferences mit KTX
+        sharedPreferences.edit {
+            putStringSet(KEY_FAVORITE_CODES, newFavorites)
+        }
 
         // Aktualisiere den UI State mit den neuen Favoriten
         _uiState.update { it.copy(favoriteCodes = newFavorites) }
 
-        // Optional: Wenn Favoriten die Sortierung beeinflussen sollen, hier neu filtern/sortieren.
-        // Die aktuelle applySorting berücksichtigt Favoriten noch nicht explizit.
-        // Falls applySorting erweitert wird, hier aufrufen:
-        applyFiltersAndSorting(_uiState.value.waitTimes) // Einfacher Ansatz
-        // applyFiltersAndSorting(originalFetchedWaitTimes) // Besserer Ansatz
+        // Wende Filter und Sortierung auf die ORIGINALEN Daten an
+        applyFiltersAndSorting(originalFetchedWaitTimes)
     }
 
     // --- NEU: Funktion zum Setzen des Filters für offene Attraktionen ---
@@ -106,10 +130,8 @@ class MainViewModel @Inject constructor(
         // Update den Filter-Status im State
         _uiState.update { it.copy(filterOnlyOpen = enabled) }
 
-        // Wende Filter (und Sortierung) auf die aktuell geladenen Daten neu an
-        // Besser wäre es, die Originaldaten zu verwenden, falls zwischengespeichert.
-        applyFiltersAndSorting(_uiState.value.waitTimes) // Einfacher Ansatz: Aktuelle Liste neu verarbeiten
-        // applyFiltersAndSorting(originalFetchedWaitTimes) // Besserer Ansatz
+        // Wende Filter und Sortierung auf die ORIGINALEN Daten an
+        applyFiltersAndSorting(originalFetchedWaitTimes)
     }
 
 
@@ -119,11 +141,11 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = if (isRefresh) null else it.error) } // Fehler nur bei explizitem Refresh löschen
 
-            val result: Result<WaitTimeResult> = repository.getPhantasialandWaitTimes()
+            val result: Result<WaitTimeResult> = repository.getPhantasialandWaitTimes(forceRefresh = isRefresh)
 
             result.onSuccess { (times, isFromCache) ->
                 // Speichere die Originaldaten (optional, aber gut für reines Filtern/Sortieren)
-                // originalFetchedWaitTimes = times
+                originalFetchedWaitTimes = times
 
                 // Wende aktuelle Filter UND Sortierung auf die NEUEN Daten an
                 // Diese Funktion aktualisiert auch den waitTimes-Teil des States
@@ -166,10 +188,8 @@ class MainViewModel @Inject constructor(
         // Update die Sortierparameter im State *zuerst*
         _uiState.update { it.copy(currentSortType = newType, currentSortDirection = newDirection) }
 
-        // Wende Filter und die *neue* Sortierung auf die *aktuell angezeigte* Liste an
-        // (Oder besser: auf die originalen Daten, falls vorhanden)
-        applyFiltersAndSorting(_uiState.value.waitTimes) // Einfacher Ansatz
-        // applyFiltersAndSorting(originalFetchedWaitTimes) // Besserer Ansatz
+        // Wende Filter und die *neue* Sortierung auf die ORIGINALEN Daten an
+        applyFiltersAndSorting(originalFetchedWaitTimes)
     }
 
 
@@ -199,12 +219,12 @@ class MainViewModel @Inject constructor(
             SortType.WAIT_TIME -> {
                 // Sortiere nach Wartezeit:
                 compareBy<AttractionWaitTime, Int?>(nullsLast()) { attraction ->
-                    // Behandle nicht-geöffnete oder null-Zeit-Attraktionen für die Sortierung:
+                    // Behandle nicht-geöffnete Attraktionen für die Sortierung:
                     // Setze ihre "effektive" Wartezeit auf einen sehr hohen Wert, damit sie bei ASC ans Ende kommen.
-                    if (attraction.status?.lowercase(Locale.GERMANY) == "opened" && attraction.waitTimeMinutes != null) {
+                    if (attraction.status.lowercase(Locale.GERMANY) == "opened") {
                         attraction.waitTimeMinutes
                     } else {
-                        Int.MAX_VALUE // Geschlossene/unbekannte/null-Zeit Attraktionen gelten als "längste" Wartezeit
+                        Int.MAX_VALUE // Geschlossene/unbekannte Attraktionen gelten als "längste" Wartezeit
                     }
                 }.thenBy(nullsLast(String.CASE_INSENSITIVE_ORDER)) {
                     // Bei gleicher effektiver Wartezeit (z.B. alle geschlossenen), sortiere nach Name
@@ -237,19 +257,18 @@ class MainViewModel @Inject constructor(
     // Stelle sicher, dass applyFiltersAndSorting diese Funktion korrekt aufruft:
     private fun applyFiltersAndSorting(sourceList: List<AttractionWaitTime>) {
         val filteredList = if (_uiState.value.filterOnlyOpen) {
-            sourceList.filter { it.status?.lowercase(Locale.GERMANY) == "opened" }
+            sourceList.filter { it.status.lowercase(Locale.GERMANY) == "opened" }
         } else {
             sourceList
         }
 
-        val sortedAndFilteredList = applySortingInternal( // Rufe die überarbeitete Funktion auf
+        val sortedAndFilteredList = applySortingInternal(
             filteredList,
             _uiState.value.currentSortType,
             _uiState.value.currentSortDirection,
-            _uiState.value.favoriteCodes // Übergabe der Favoriten ist entscheidend!
+            _uiState.value.favoriteCodes
         )
 
         _uiState.update { it.copy(waitTimes = sortedAndFilteredList) }
     }
 }
-

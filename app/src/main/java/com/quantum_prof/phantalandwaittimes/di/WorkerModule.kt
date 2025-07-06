@@ -1,7 +1,7 @@
 package com.quantum_prof.phantalandwaittimes.di
 
 import android.content.Context
-import android.content.SharedPreferences
+import com.quantum_prof.phantalandwaittimes.worker.WaitTimeCheckService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -11,18 +11,13 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object StorageModule {
-
-    const val KEY_FAVORITE_CODES = "favorite_codes"
-    const val KEY_WAIT_TIME_ALERTS = "wait_time_alerts"
-
-    private const val PREFS_NAME = "phantasialand_wait_times_prefs"
+object WorkerModule {
 
     @Provides
     @Singleton
-    fun provideSharedPreferences(
+    fun provideWaitTimeCheckService(
         @ApplicationContext context: Context
-    ): SharedPreferences {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    ): WaitTimeCheckService {
+        return WaitTimeCheckService(context)
     }
 }
