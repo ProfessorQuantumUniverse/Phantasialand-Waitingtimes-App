@@ -16,6 +16,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -28,6 +31,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -95,8 +99,8 @@ fun getAttractionIconResId(code: String): Int {
     return when (code) {
         "3136", "3137", "3532", "3235", "3630", "3539", "3733" -> R.drawable.ic_coaster
         "3238", "3139", "3735" -> R.drawable.ic_waterride
-        "34", "3431", "3432" -> R.drawable.ic_show
-        "31", "32", "33", "35", "3632", "3633", "3634", "3635", "3638", "3730", "3731", "3732" -> R.drawable.ic_kid_ride
+        "34", "3431", "3432" -> R.drawable.ic_default_ride
+        "31", "32", "33", "35", "3632", "3633", "3634", "3635", "3638", "3730", "3731", "3732" -> R.drawable.ic_childride
         else -> R.drawable.ic_default_ride
     }
 }
@@ -202,12 +206,33 @@ fun ImprovedTopAppBar(
             },
             actions = {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // Sort Direction Toggle Button with animated arrow
+                    IconButton(
+                        onClick = onSortDirectionToggle
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_sort_arrow),
+                            contentDescription = when (uiState.currentSortDirection) {
+                                SortDirection.ASCENDING -> "Sort Ascending"
+                                SortDirection.DESCENDING -> "Sort Descending"
+                            },
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.rotate(
+                                when (uiState.currentSortDirection) {
+                                    SortDirection.ASCENDING -> 180f // Pfeil nach oben
+                                    SortDirection.DESCENDING -> 0f  // Pfeil nach unten
+                                }
+                            )
+                        )
+                    }
+
+                    // Sort Options Menu Button
                     IconButton(
                         onClick = { onShowSortMenuChange(!showSortMenu) }
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Sort,
-                            contentDescription = "Sort",
+                            contentDescription = "Sort Options",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -221,12 +246,34 @@ fun ImprovedTopAppBar(
                     SortType.values().forEach { sortType ->
                         DropdownMenuItem(
                             text = {
-                                Text(
-                                    when (sortType) {
-                                        SortType.NAME -> "By name"
-                                        SortType.WAIT_TIME -> "By time"
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    // Zeige Checkmark für aktuell ausgewählten Sort Type
+                                    if (sortType == uiState.currentSortType) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    } else {
+                                        Spacer(modifier = Modifier.size(16.dp))
                                     }
-                                )
+
+                                    Text(
+                                        when (sortType) {
+                                            SortType.NAME -> "Nach Name"
+                                            SortType.WAIT_TIME -> "Nach Wartezeit"
+                                        },
+                                        color = if (sortType == uiState.currentSortType) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurface
+                                        }
+                                    )
+                                }
                             },
                             onClick = {
                                 onSortTypeChange(sortType)
@@ -234,23 +281,6 @@ fun ImprovedTopAppBar(
                             }
                         )
                     }
-
-                    HorizontalDivider()
-
-                    // Sort Direction Toggle
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                when (uiState.currentSortDirection) {
-                                    SortDirection.ASCENDING -> "Ascending"
-                                    SortDirection.DESCENDING -> "Descending"
-                                }
-                            )
-                        },
-                        onClick = {
-                            onSortDirectionToggle()
-                        }
-                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
@@ -275,11 +305,28 @@ fun WaitTimeContent(
     val pullToRefreshState = rememberPullToRefreshState()
 
     Column(modifier = modifier.fillMaxSize()) {
+        // Active Alerts Panel state
+        var showActiveAlerts by remember { mutableStateOf(false) }
+
         // Filter controls
         if (uiState.waitTimes.isNotEmpty() || (uiState.error == null && !uiState.isLoading)) {
             ModernFilterControls(
                 filterOnlyOpen = uiState.filterOnlyOpen,
-                onFilterOnlyOpenChanged = onFilterOnlyOpenChanged
+                onFilterOnlyOpenChanged = onFilterOnlyOpenChanged,
+                activeAlertsCount = uiState.activeAlerts.size,
+                showActiveAlerts = showActiveAlerts,
+                onToggleActiveAlerts = { showActiveAlerts = !showActiveAlerts }
+            )
+        }
+
+        // Active Alerts Panel - show when there are active alerts and expanded
+        if (uiState.activeAlerts.isNotEmpty() && showActiveAlerts) {
+            ActiveAlertsPanel(
+                alerts = uiState.activeAlerts,
+                waitTimes = uiState.waitTimes,
+                onEditAlert = onAddAlertClicked,
+                onRemoveAlert = onRemoveAlert,
+                onCollapse = { showActiveAlerts = false }
             )
         }
 
@@ -322,19 +369,29 @@ fun WaitTimeContent(
                             item {
                                 ModernLastUpdatedHeader(
                                     timestamp = uiState.lastUpdated,
-                                    isOffline = uiState.isOfflineData
+                                    isOffline = uiState.isOfflineData,
+                                    modifier = Modifier.slideInFromBottom(0)
                                 )
                             }
                         }
 
-                        items(uiState.waitTimes, key = { it.code }) { attraction ->
+                        itemsIndexed(
+                            items = uiState.waitTimes,
+                            key = { _, attraction -> attraction.code }
+                        ) { index, attraction ->
+                            val isFavorite = attraction.code in uiState.favoriteCodes
+                            val currentAlert = uiState.activeAlerts.find { it.attractionCode == attraction.code }
+
+                            // Sortiere Favoriten nach oben mit Animation
                             WaitTimeCard(
                                 attraction = attraction,
-                                isFavorite = attraction.code in uiState.favoriteCodes,
+                                isFavorite = isFavorite,
                                 hasAlert = uiState.activeAlerts.any { it.attractionCode == attraction.code },
                                 onFavoriteToggle = { onFavoriteToggle(attraction.code) },
-                                onAddAlert = { onAddAlertClicked(attraction) },
-                                onRemoveAlert = { onRemoveAlert(attraction.code) }
+                                onAlertClick = { onAddAlertClicked(attraction) }, // Always open dialog
+                                currentAlert = currentAlert, // Pass the current alert for trend indicator
+                                modifier = Modifier
+                                    .animateItem() // Nur smooth item repositioning, keine Fade-in Animation
                             )
                         }
 
@@ -352,6 +409,9 @@ fun WaitTimeContent(
 fun ModernFilterControls(
     filterOnlyOpen: Boolean,
     onFilterOnlyOpenChanged: (Boolean) -> Unit,
+    activeAlertsCount: Int,
+    showActiveAlerts: Boolean,
+    onToggleActiveAlerts: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Schlichte Material 3 Card
@@ -371,21 +431,63 @@ fun ModernFilterControls(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
+            // Schöneres Filter Icon mit Animation
             Icon(
-                imageVector = Icons.Default.FilterList,
+                imageVector = Icons.Default.Tune,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier
+                    .size(22.dp)
+                    .rotate(if (filterOnlyOpen) 15f else 0f)
             )
 
             Spacer(modifier = Modifier.width(12.dp))
 
             Text(
-                text = "Show only open attractions",
+                text = "Nur geöffnete Attraktionen",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onSurface
             )
+
+            // Active Alerts Button mit verbesserter Badge
+            if (activeAlertsCount > 0) {
+                Box {
+                    IconButton(
+                        onClick = onToggleActiveAlerts,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (showActiveAlerts) Icons.Default.NotificationsOff else Icons.Default.Notifications,
+                            contentDescription = if (showActiveAlerts) "Alerts ausblenden" else "Aktive Alerts anzeigen",
+                            tint = if (showActiveAlerts) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .then(
+                                    if (!showActiveAlerts) Modifier.pulsingGlow(MaterialTheme.colorScheme.primary, 2000)
+                                    else Modifier
+                                )
+                        )
+                    }
+
+                    // Schönere Badge Positionierung
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = (-4).dp, y = 4.dp)
+                    ) {
+                        Text(
+                            text = activeAlertsCount.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onError,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+            }
 
             Switch(
                 checked = filterOnlyOpen,

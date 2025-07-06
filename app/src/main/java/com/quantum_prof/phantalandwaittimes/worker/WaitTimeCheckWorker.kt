@@ -1,41 +1,40 @@
 package com.quantum_prof.phantalandwaittimes.worker
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
 import com.quantum_prof.phantalandwaittimes.data.WaitTimeRepository
 import com.quantum_prof.phantalandwaittimes.data.notification.AlertRepository
 import com.quantum_prof.phantalandwaittimes.notification.NotificationService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import javax.inject.Inject
-import javax.inject.Singleton
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 
 /**
- * Service zum Überprüfen von Wartezeit-Alerts
- * Alternative Implementierung ohne WorkManager-Abhängigkeiten
+ * Worker zum Überprüfen von Wartezeit-Alerts
  */
-@Singleton
-class WaitTimeCheckService @Inject constructor(
+@HiltWorker
+class WaitTimeCheckWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
     private val waitTimeRepository: WaitTimeRepository,
     private val alertRepository: AlertRepository,
     private val notificationService: NotificationService
-) {
+) : CoroutineWorker(context, workerParams) {
 
-    /**
-     * Prüft alle aktiven Alerts und sendet Benachrichtigungen bei Bedarf
-     * @return true wenn erfolgreich, false bei Fehlern
-     */
-    suspend fun checkAlerts(): Boolean = withContext(Dispatchers.IO) {
-        try {
+    override suspend fun doWork(): Result {
+        return try {
             // 1. Lade aktive Alerts
             val activeAlerts = alertRepository.getAlerts()
             if (activeAlerts.isEmpty()) {
-                return@withContext true
+                return Result.success()
             }
 
             // 2. Hole aktuelle Wartezeiten
             val waitTimesResult = waitTimeRepository.getPhantasialandWaitTimes()
 
-            waitTimesResult.onSuccess { (waitTimes, _) ->
+            waitTimesResult.onSuccess { result ->
+                val (waitTimes, _) = result
                 // 3. Prüfe jeden Alert
                 activeAlerts.forEach { alert ->
                     val currentAttraction = waitTimes.find { it.code == alert.attractionCode }
@@ -53,39 +52,10 @@ class WaitTimeCheckService @Inject constructor(
                 }
             }
 
-            true
+            Result.success()
         } catch (e: Exception) {
             e.printStackTrace()
-            false
-        }
-    }
-
-    /**
-     * Prüft einen spezifischen Alert
-     */
-    suspend fun checkSpecificAlert(attractionCode: String): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val alert = alertRepository.getAlerts().find { it.attractionCode == attractionCode }
-                ?: return@withContext false
-
-            val waitTimesResult = waitTimeRepository.getPhantasialandWaitTimes()
-
-            waitTimesResult.onSuccess { (waitTimes, _) ->
-                val currentAttraction = waitTimes.find { it.code == attractionCode }
-
-                if (currentAttraction != null &&
-                    currentAttraction.status.lowercase() == "opened" &&
-                    currentAttraction.waitTimeMinutes <= alert.targetTime) {
-
-                    notificationService.showNotification(alert, currentAttraction.waitTimeMinutes)
-                    alertRepository.removeAlert(attractionCode)
-                }
-            }
-
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
+            Result.retry()
         }
     }
 }

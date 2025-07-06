@@ -3,6 +3,8 @@ package com.quantum_prof.phantalandwaittimes.ui.theme.components
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -10,9 +12,12 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -28,8 +33,8 @@ fun Modifier.pulsingGlow(
 ): Modifier = composed {
     val infiniteTransition = rememberInfiniteTransition(label = "glow")
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
+        initialValue = 0.1f, // Reduziert von 0.3f
+        targetValue = 0.4f, // Reduziert von 1f
         animationSpec = infiniteRepeatable(
             animation = tween(animationDuration, easing = EaseInOutCubic),
             repeatMode = RepeatMode.Reverse
@@ -37,28 +42,23 @@ fun Modifier.pulsingGlow(
         label = "glow_alpha"
     )
 
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(animationDuration, easing = EaseInOutCubic),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glow_scale"
-    )
-
-    this
-        .scale(scale)
-        .drawBehind {
-            val brush = Brush.radialGradient(
-                colors = listOf(
-                    glowColor.copy(alpha = glowAlpha),
-                    Color.Transparent
-                ),
-                radius = size.maxDimension * 0.7f
-            )
-            drawRect(brush = brush)
-        }
+    this.drawBehind {
+        // Runder Glow-Effekt ohne Scale-Animation
+        val radius = size.minDimension * 0.6f // Kleinerer Radius von 0.8f auf 0.6f
+        val brush = Brush.radialGradient(
+            colors = listOf(
+                glowColor.copy(alpha = glowAlpha * 0.3f), // Reduziert von 0.6f
+                glowColor.copy(alpha = glowAlpha * 0.15f), // Reduziert von 0.3f
+                Color.Transparent
+            ),
+            radius = radius
+        )
+        drawCircle(
+            brush = brush,
+            radius = radius,
+            center = center
+        )
+    }
 }
 
 /**
@@ -442,5 +442,180 @@ fun Modifier.flipCard(
     this.graphicsLayer {
         rotationY = rotation
         cameraDistance = 12f * density
+    }
+}
+
+/**
+ * 🌟 Smooth Scale Animation für Favoriten - Ultra Performance Version
+ */
+@Composable
+fun Modifier.favoriteAnimation(
+    isFavorite: Boolean,
+    duration: Int = 300
+): Modifier = composed {
+    // Nur animieren wenn sich der Status ändert, nicht permanent
+    val scale by animateFloatAsState(
+        targetValue = if (isFavorite) 1.02f else 1.0f,
+        animationSpec = tween(
+            durationMillis = 200, // Sehr kurz für weniger Frames
+            easing = FastOutSlowInEasing // Optimiertes Easing
+        ),
+        label = "favorite_scale"
+    )
+
+    // Verwende graphicsLayer mit Conditional für beste Performance
+    if (scale != 1.0f) {
+        this.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+    } else {
+        this // Keine Transformation wenn nicht nötig
+    }
+}
+
+/**
+ * ✨ Sparkle Animation für neu favorisierte Items
+ */
+@Composable
+fun Modifier.sparkleOnFavorite(
+    isFavorite: Boolean,
+    sparkleColor: Color = Color.Yellow
+): Modifier = composed {
+    var showSparkle by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isFavorite) {
+        if (isFavorite) {
+            showSparkle = true
+        }
+    }
+
+    val sparkleAlpha by animateFloatAsState(
+        targetValue = if (showSparkle && isFavorite) 1f else 0f,
+        animationSpec = tween(500),
+        finishedListener = { showSparkle = false },
+        label = "sparkle_alpha"
+    )
+
+    this.drawBehind {
+        if (sparkleAlpha > 0f) {
+            // Zeichne kleine Sterne um das Element
+            val sparkleCount = 8
+            val radius = size.maxDimension * 0.3f
+
+            for (i in 0 until sparkleCount) {
+                val angle = (i * 45f) * PI / 180
+                val x = center.x + cos(angle) * radius
+                val y = center.y + sin(angle) * radius
+
+                drawCircle(
+                    color = sparkleColor.copy(alpha = sparkleAlpha),
+                    radius = 3f,
+                    center = Offset(x.toFloat(), y.toFloat())
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 🎯 Smooth Slide Animation für Listenelemente
+ */
+@Composable
+fun Modifier.slideInFromBottom(
+    delay: Int = 0
+): Modifier = composed {
+    var isVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        // Deutlich reduziertes Delay für weniger Ruckeln
+        kotlinx.coroutines.delay((delay / 10).toLong()) // 10x schneller!
+        isVisible = true
+    }
+
+    val offsetY by animateFloatAsState(
+        targetValue = if (isVisible) 0f else 30f, // Weniger Offset für subtilere Animation
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy, // Kein Bounce für Performance
+            stiffness = Spring.StiffnessHigh
+        ),
+        label = "slide_in"
+    )
+
+    val alpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(80), // Ultra schnell: nur 80ms!
+        label = "fade_in"
+    )
+
+    this
+        .graphicsLayer {
+            translationY = offsetY
+            this.alpha = alpha
+        }
+}
+
+/**
+ * 🏆 Elevation Animation für Favoriten
+ */
+@Composable
+fun Modifier.favoriteElevation(
+    isFavorite: Boolean
+): Modifier = composed {
+    val elevation by animateDpAsState(
+        targetValue = if (isFavorite) 8.dp else 2.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "favorite_elevation"
+    )
+
+    this.graphicsLayer {
+        shadowElevation = elevation.toPx()
+    }
+}
+
+/**
+ * 📱 Enhanced Scroll Behavior für LazyColumn
+ */
+object SmoothScrollBehavior {
+    val smoothFling = object : FlingBehavior {
+        override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
+            return scrollBy(initialVelocity * 0.8f) // Sanfteres Scrolling
+        }
+    }
+}
+
+/**
+ * 🎨 Glow Border für Favoriten
+ */
+@Composable
+fun Modifier.favoriteGlowBorder(
+    isFavorite: Boolean,
+    glowColor: Color = Color(0xFFFFD700), // Gold
+    borderWidth: Dp = 2.dp
+): Modifier = composed {
+    val infiniteTransition = rememberInfiniteTransition(label = "favorite_glow")
+
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = if (isFavorite) 0.3f else 0f,
+        targetValue = if (isFavorite) 0.8f else 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow_border_alpha"
+    )
+
+    this.drawBehind {
+        if (isFavorite && glowAlpha > 0f) {
+            drawRoundRect(
+                color = glowColor.copy(alpha = glowAlpha),
+                size = size,
+                style = Stroke(width = borderWidth.toPx()),
+                cornerRadius = CornerRadius(16.dp.toPx())
+            )
+        }
     }
 }
