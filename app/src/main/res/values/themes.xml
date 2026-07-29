@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.PhantasialandWaitTimes" parent="Theme.Material3.DayNight.NoActionBar">
+    <!--
+      Launch theme only. All in-app styling is done by Compose (PhantasialandWaitTimesTheme);
+      this exists so the window has a sensible background before the first frame is drawn.
+      Uses a platform parent so the app does not need the AppCompat/Material View libraries.
+    -->
+    <style name="Theme.PhantasialandWaitTimes" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
     </style>
 </resources>

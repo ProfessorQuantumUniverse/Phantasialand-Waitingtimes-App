@@ -1,23 +1,48 @@
 package com.quantum_prof.phantalandwaittimes.ui.theme.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.quantum_prof.phantalandwaittimes.R
 import com.quantum_prof.phantalandwaittimes.data.AttractionWaitTime
 import com.quantum_prof.phantalandwaittimes.data.notification.WaitTimeAlert
+import com.quantum_prof.phantalandwaittimes.ui.waitTimeLabel
 
+/**
+ * Horizontal strip of the currently armed alerts.
+ *
+ * Alerts whose attraction is missing from the current data (filtered out, or dropped by the API)
+ * are still shown — previously they vanished from this panel while remaining active, which made
+ * them impossible to delete.
+ */
 @Composable
 fun ActiveAlertsPanel(
     alerts: List<WaitTimeAlert>,
@@ -29,19 +54,19 @@ fun ActiveAlertsPanel(
 ) {
     if (alerts.isEmpty()) return
 
+    val byCode = waitTimes.associateBy { it.code }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(12.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -51,189 +76,142 @@ fun ActiveAlertsPanel(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Schöneres Alert Icon mit Glow-Effekt
-                    Box {
-                        Icon(
-                            imageVector = Icons.Default.Campaign,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .size(20.dp)
-                                .pulsingGlow(MaterialTheme.colorScheme.primary, 1500)
-                        )
-
-                        // Zusätzlicher kleiner Punkt für extra Aufmerksamkeit
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .offset(x = 15.dp, y = (-2).dp)
-                                .background(
-                                    MaterialTheme.colorScheme.error,
-                                    CircleShape
-                                )
-                        )
-                    }
-
+                    Icon(
+                        imageVector = Icons.Default.NotificationsActive,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(18.dp)
+                    )
                     Text(
-                        text = "Aktive Alerts (${alerts.size})",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        text = stringResource(R.string.alerts_active_title, alerts.size),
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
 
-                // Schönerer Collapse Button
-                IconButton(
-                    onClick = onCollapse,
-                    modifier = Modifier.size(28.dp)
-                ) {
+                IconButton(onClick = onCollapse, modifier = Modifier.size(32.dp)) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowUp,
-                        contentDescription = "Alerts ausblenden",
+                        contentDescription = stringResource(R.string.alerts_collapse),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 2.dp)
             ) {
-                items(alerts) { alert ->
-                    val attraction = waitTimes.find { it.code == alert.attractionCode }
-                    if (attraction != null) {
-                        AlertChip(
-                            alert = alert,
-                            attraction = attraction,
-                            onEdit = { onEditAlert(attraction) },
-                            onRemove = { onRemoveAlert(alert.attractionCode) }
-                        )
-                    }
+                items(items = alerts, key = { it.attractionCode }) { alert ->
+                    AlertChip(
+                        alert = alert,
+                        attraction = byCode[alert.attractionCode],
+                        onEdit = { byCode[alert.attractionCode]?.let(onEditAlert) },
+                        onRemove = { onRemoveAlert(alert.attractionCode) }
+                    )
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AlertChip(
     alert: WaitTimeAlert,
-    attraction: AttractionWaitTime,
+    attraction: AttractionWaitTime?,
     onEdit: () -> Unit,
     onRemove: () -> Unit
 ) {
-    val isTriggered = attraction.waitTimeMinutes <= alert.targetTime
-    val isOpen = attraction.status.lowercase() == "opened"
+    val isOpen = attraction?.isOpen == true
+    val isTriggered = isOpen && attraction.displayWaitTime <= alert.targetMinutes
+
+    val containerColor = when {
+        isTriggered -> MaterialTheme.colorScheme.tertiaryContainer
+        !isOpen -> MaterialTheme.colorScheme.surfaceVariant
+        else -> MaterialTheme.colorScheme.surface
+    }
+    val contentColor = when {
+        isTriggered -> MaterialTheme.colorScheme.onTertiaryContainer
+        !isOpen -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onSurface
+    }
 
     Card(
         onClick = onEdit,
-        modifier = Modifier.width(140.dp),
-        shape = RoundedCornerShape(12.dp),
+        // Nothing to edit when the attraction is not in the current data set.
+        enabled = attraction != null,
+        modifier = Modifier.width(168.dp),
+        shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(
-            containerColor = when {
-                isTriggered && isOpen -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f)
-                !isOpen -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                else -> MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-            }
+            containerColor = containerColor,
+            contentColor = contentColor,
+            disabledContainerColor = containerColor,
+            disabledContentColor = contentColor
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isTriggered && isOpen) 6.dp else 2.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isTriggered) 4.dp else 1.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
+        Column(modifier = Modifier.padding(10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = attraction.name,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                Text(
+                    text = attraction?.name.orEmpty().ifBlank { alert.attractionName },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
 
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "${attraction.waitTimeMinutes}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                isTriggered && isOpen -> MaterialTheme.colorScheme.onTertiary
-                                else -> MaterialTheme.colorScheme.primary
-                            }
-                        )
-
-                        Text(
-                            text = "/ ${alert.targetTime}min",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                IconButton(
-                    onClick = onRemove,
-                    modifier = Modifier.size(24.dp)
-                ) {
+                IconButton(onClick = onRemove, modifier = Modifier.size(24.dp)) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Alert entfernen",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        contentDescription = stringResource(R.string.alerts_remove),
                         modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            if (isTriggered && isOpen) {
-                Spacer(modifier = Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                text = attraction?.let { waitTimeLabel(it) } ?: stringResource(R.string.status_unknown),
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Text(
+                text = stringResource(R.string.alerts_target_format, alert.targetMinutes),
+                style = MaterialTheme.typography.labelSmall
+            )
+
+            if (isTriggered || !isOpen) {
+                Spacer(Modifier.height(6.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.CheckCircle,
+                        imageVector = if (isTriggered) {
+                            Icons.Default.CheckCircle
+                        } else {
+                            Icons.Default.Schedule
+                        },
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onTertiary,
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text = "Ziel erreicht!",
+                        text = if (isTriggered) {
+                            stringResource(R.string.alerts_target_reached)
+                        } else {
+                            stringResource(R.string.status_closed)
+                        },
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onTertiary
-                    )
-                }
-            } else if (!isOpen) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = "Geschlossen",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }

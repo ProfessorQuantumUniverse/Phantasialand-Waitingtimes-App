@@ -1,0 +1,82 @@
+<resources>
+    <string name="title_wait_times">Tempi di attesa</string>
+    <string name="sort_options">Opzioni di ordinamento</string>
+    <string name="sort_ascending">Ordine crescente</string>
+    <string name="sort_descending">Ordine decrescente</string>
+    <string name="sort_by_name">Per nome</string>
+    <string name="sort_by_wait_time">Per tempo di attesa</string>
+
+    <string name="filter_only_open">Solo attrazioni aperte</string>
+    <string name="filter_open_of_total">%1$d di %2$d aperte</string>
+    <string name="alerts_show">Mostra avvisi attivi</string>
+    <string name="alerts_hide">Nascondi avvisi</string>
+
+    <string name="updated_just_now">Aggiornato proprio ora</string>
+    <!-- Italian "many" only applies to values in the millions; unreachable here, but required. -->
+    <plurals name="updated_minutes_ago">
+        <item quantity="one">Aggiornato %d minuto fa</item>
+        <item quantity="many">Aggiornato %d di minuti fa</item>
+        <item quantity="other">Aggiornato %d minuti fa</item>
+    </plurals>
+    <plurals name="updated_hours_ago">
+        <item quantity="one">Aggiornato %d ora fa</item>
+        <item quantity="many">Aggiornato %d di ore fa</item>
+        <item quantity="other">Aggiornato %d ore fa</item>
+    </plurals>
+    <string name="updated_offline_prefix">Offline · %1$s</string>
+    <string name="updated_at_time">%1$s (%2$s)</string>
+
+    <string name="wait_minutes">%d min</string>
+    <string name="status_closed">Chiusa</string>
+    <string name="status_maintenance">Manutenzione</string>
+    <string name="status_unknown">Sconosciuto</string>
+    <string name="favorite_add">Aggiungi ai preferiti</string>
+    <string name="favorite_remove">Rimuovi dai preferiti</string>
+    <string name="alert_add">Aggiungi avviso</string>
+    <string name="alert_edit">Modifica avviso</string>
+
+    <string name="alerts_active_title">Avvisi attivi (%d)</string>
+    <string name="alerts_collapse">Nascondi avvisi</string>
+    <string name="alerts_remove">Rimuovi avviso</string>
+    <string name="alerts_target_reached">Obiettivo raggiunto!</string>
+    <string name="alerts_target_format">Obiettivo: %d min</string>
+
+    <string name="alert_dialog_create_title">Crea avviso</string>
+    <string name="alert_dialog_edit_title">Modifica avviso</string>
+    <string name="alert_dialog_current_wait">Attesa attuale</string>
+    <string name="alert_dialog_notify_when">Avvisami quando l\'attesa scende al massimo a</string>
+    <string name="alert_dialog_minutes_label">Minuti</string>
+    <string name="alert_dialog_minutes_suffix">min</string>
+    <string name="alert_dialog_invalid_input">Inserisci un numero tra %1$d e %2$d</string>
+    <string name="alert_dialog_delete">Elimina avviso</string>
+    <string name="alert_dialog_cancel">Annulla</string>
+    <string name="alert_dialog_save">Salva</string>
+    <string name="alert_dialog_create">Crea</string>
+    <string name="alert_dialog_permission_hint">Le notifiche sono disattivate. L\'avviso verrà salvato, ma non riceverai alcun messaggio.</string>
+
+    <string name="loading_title">Caricamento dei tempi di attesa</string>
+    <string name="loading_subtitle">Recupero dei dati più recenti</string>
+    <string name="empty_all_closed_title">Tutte le attrazioni sono chiuse</string>
+    <string name="empty_all_closed_subtitle">Disattiva il filtro per vedere anche le attrazioni chiuse.</string>
+    <string name="empty_no_data_title">Nessun dato disponibile</string>
+    <string name="empty_no_data_subtitle">Trascina la lista verso il basso per riprovare.</string>
+    <string name="error_title">Qualcosa è andato storto</string>
+    <string name="error_no_connection">Nessuna connessione. Controlla la rete e riprova.</string>
+    <string name="error_timeout">La richiesta ha impiegato troppo tempo. Riprova.</string>
+    <string name="error_server">Il servizio al momento non risponde. Riprova più tardi.</string>
+    <string name="error_unknown">Non è stato possibile caricare i tempi di attesa.</string>
+    <string name="action_retry">Riprova</string>
+
+    <string name="footer_data_by">Dati forniti da</string>
+
+    <string name="notification_channel_name">Avvisi sui tempi di attesa</string>
+    <string name="notification_channel_description">Ti avvisa non appena un\'attrazione raggiunge il tuo tempo di attesa obiettivo.</string>
+    <string name="notification_title">%1$s ha poca fila in questo momento!</string>
+    <string name="notification_text">Attesa attuale: %1$d min (il tuo obiettivo era %2$d min).</string>
+    <string name="notification_summary_title">Avvisi sui tempi di attesa</string>
+    <plurals name="notification_summary_text">
+        <item quantity="one">%d attrazione ha raggiunto il tuo obiettivo</item>
+        <item quantity="many">%d di attrazioni hanno raggiunto il tuo obiettivo</item>
+        <item quantity="other">%d attrazioni hanno raggiunto il tuo obiettivo</item>
+    </plurals>
+</resources>

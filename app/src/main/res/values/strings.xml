@@ -1,3 +1,94 @@
 <resources>
-    <string name="app_name">Phantasialand Waiting Times</string>
+    <!--
+      Default (English) strings. Every other locale lives in values-<code>/strings.xml and falls
+      back to this file for anything it does not translate.
+    -->
+    <string name="app_name" translatable="false">Phantasialand Waiting Times</string>
+
+    <!-- Top bar -->
+    <string name="title_wait_times">Wait Times</string>
+    <string name="sort_options">Sort options</string>
+    <string name="sort_ascending">Sorted ascending</string>
+    <string name="sort_descending">Sorted descending</string>
+    <string name="sort_by_name">By name</string>
+    <string name="sort_by_wait_time">By wait time</string>
+
+    <!-- Filter row -->
+    <string name="filter_only_open">Open attractions only</string>
+    <string name="filter_open_of_total">%1$d of %2$d open</string>
+    <string name="alerts_show">Show active alerts</string>
+    <string name="alerts_hide">Hide alerts</string>
+
+    <!-- Freshness banner -->
+    <string name="updated_just_now">Updated just now</string>
+    <plurals name="updated_minutes_ago">
+        <item quantity="one">Updated %d minute ago</item>
+        <item quantity="other">Updated %d minutes ago</item>
+    </plurals>
+    <plurals name="updated_hours_ago">
+        <item quantity="one">Updated %d hour ago</item>
+        <item quantity="other">Updated %d hours ago</item>
+    </plurals>
+    <string name="updated_offline_prefix">Offline · %1$s</string>
+    <string name="updated_at_time">%1$s (%2$s)</string>
+
+    <!-- List content -->
+    <string name="wait_minutes">%d min</string>
+    <string name="status_closed">Closed</string>
+    <string name="status_maintenance">Maintenance</string>
+    <string name="status_unknown">Unknown</string>
+    <string name="favorite_add">Add to favourites</string>
+    <string name="favorite_remove">Remove from favourites</string>
+    <string name="alert_add">Add alert</string>
+    <string name="alert_edit">Edit alert</string>
+
+    <!-- Alerts panel -->
+    <string name="alerts_active_title">Active alerts (%d)</string>
+    <string name="alerts_collapse">Hide alerts</string>
+    <string name="alerts_remove">Remove alert</string>
+    <string name="alerts_target_reached">Target reached!</string>
+    <string name="alerts_target_format">Target: %d min</string>
+
+    <!-- Alert dialog -->
+    <string name="alert_dialog_create_title">Create alert</string>
+    <string name="alert_dialog_edit_title">Edit alert</string>
+    <string name="alert_dialog_current_wait">Current wait</string>
+    <string name="alert_dialog_notify_when">Notify me when the wait drops to at most</string>
+    <string name="alert_dialog_minutes_label">Minutes</string>
+    <string name="alert_dialog_minutes_suffix">min</string>
+    <string name="alert_dialog_invalid_input">Enter a number between %1$d and %2$d</string>
+    <string name="alert_dialog_delete">Delete alert</string>
+    <string name="alert_dialog_cancel">Cancel</string>
+    <string name="alert_dialog_save">Save</string>
+    <string name="alert_dialog_create">Create</string>
+    <string name="alert_dialog_permission_hint">Notifications are turned off. The alert will be saved, but you will not be notified.</string>
+
+    <!-- Loading / empty / error -->
+    <string name="loading_title">Loading wait times</string>
+    <string name="loading_subtitle">Fetching the latest data</string>
+    <string name="empty_all_closed_title">All attractions are closed</string>
+    <string name="empty_all_closed_subtitle">Turn off the filter to see closed attractions as well.</string>
+    <string name="empty_no_data_title">No data available</string>
+    <string name="empty_no_data_subtitle">Pull down to try again.</string>
+    <string name="error_title">Something went wrong</string>
+    <string name="error_no_connection">No connection. Check your network and try again.</string>
+    <string name="error_timeout">The request took too long. Please try again.</string>
+    <string name="error_server">The service is not responding right now. Please try again later.</string>
+    <string name="error_unknown">The wait times could not be loaded.</string>
+    <string name="action_retry">Try again</string>
+
+    <!-- Footer -->
+    <string name="footer_data_by">Data provided by</string>
+    <string name="footer_source" translatable="false">wartezeiten.app</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Wait time alerts</string>
+    <string name="notification_channel_description">Notifies you as soon as an attraction reaches your target wait time.</string>
+    <string name="notification_title">%1$s is short right now!</string>
+    <string name="notification_text">Current wait: %1$d min (your target was %2$d min).</string>
+    <string name="notification_summary_title">Wait time alerts</string>
+    <plurals name="notification_summary_text">
+        <item quantity="one">%d attraction reached your target</item>
+        <item quantity="other">%d attractions reached your target</item>
+    </plurals>
 </resources>

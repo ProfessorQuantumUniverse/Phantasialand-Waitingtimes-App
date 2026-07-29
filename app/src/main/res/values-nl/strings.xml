@@ -1,0 +1,78 @@
+<resources>
+    <string name="title_wait_times">Wachttijden</string>
+    <string name="sort_options">Sorteeropties</string>
+    <string name="sort_ascending">Oplopend gesorteerd</string>
+    <string name="sort_descending">Aflopend gesorteerd</string>
+    <string name="sort_by_name">Op naam</string>
+    <string name="sort_by_wait_time">Op wachttijd</string>
+
+    <string name="filter_only_open">Alleen geopende attracties</string>
+    <string name="filter_open_of_total">%1$d van %2$d geopend</string>
+    <string name="alerts_show">Actieve meldingen tonen</string>
+    <string name="alerts_hide">Meldingen verbergen</string>
+
+    <string name="updated_just_now">Zojuist bijgewerkt</string>
+    <plurals name="updated_minutes_ago">
+        <item quantity="one">%d minuut geleden bijgewerkt</item>
+        <item quantity="other">%d minuten geleden bijgewerkt</item>
+    </plurals>
+    <plurals name="updated_hours_ago">
+        <item quantity="one">%d uur geleden bijgewerkt</item>
+        <item quantity="other">%d uur geleden bijgewerkt</item>
+    </plurals>
+    <string name="updated_offline_prefix">Offline · %1$s</string>
+    <string name="updated_at_time">%1$s (%2$s)</string>
+
+    <string name="wait_minutes">%d min</string>
+    <string name="status_closed">Gesloten</string>
+    <string name="status_maintenance">Onderhoud</string>
+    <string name="status_unknown">Onbekend</string>
+    <string name="favorite_add">Aan favorieten toevoegen</string>
+    <string name="favorite_remove">Uit favorieten verwijderen</string>
+    <string name="alert_add">Melding toevoegen</string>
+    <string name="alert_edit">Melding bewerken</string>
+
+    <string name="alerts_active_title">Actieve meldingen (%d)</string>
+    <string name="alerts_collapse">Meldingen verbergen</string>
+    <string name="alerts_remove">Melding verwijderen</string>
+    <string name="alerts_target_reached">Doel bereikt!</string>
+    <string name="alerts_target_format">Doel: %d min</string>
+
+    <string name="alert_dialog_create_title">Melding maken</string>
+    <string name="alert_dialog_edit_title">Melding bewerken</string>
+    <string name="alert_dialog_current_wait">Huidige wachttijd</string>
+    <string name="alert_dialog_notify_when">Waarschuw me als de wachttijd daalt tot maximaal</string>
+    <string name="alert_dialog_minutes_label">Minuten</string>
+    <string name="alert_dialog_minutes_suffix">min</string>
+    <string name="alert_dialog_invalid_input">Voer een getal tussen %1$d en %2$d in</string>
+    <string name="alert_dialog_delete">Melding verwijderen</string>
+    <string name="alert_dialog_cancel">Annuleren</string>
+    <string name="alert_dialog_save">Opslaan</string>
+    <string name="alert_dialog_create">Maken</string>
+    <string name="alert_dialog_permission_hint">Meldingen staan uit. De melding wordt opgeslagen, maar je krijgt geen bericht.</string>
+
+    <string name="loading_title">Wachttijden worden geladen</string>
+    <string name="loading_subtitle">De nieuwste gegevens worden opgehaald</string>
+    <string name="empty_all_closed_title">Alle attracties zijn gesloten</string>
+    <string name="empty_all_closed_subtitle">Schakel het filter uit om ook gesloten attracties te zien.</string>
+    <string name="empty_no_data_title">Geen gegevens beschikbaar</string>
+    <string name="empty_no_data_subtitle">Trek de lijst omlaag om het opnieuw te proberen.</string>
+    <string name="error_title">Er is iets misgegaan</string>
+    <string name="error_no_connection">Geen verbinding. Controleer je netwerk en probeer het opnieuw.</string>
+    <string name="error_timeout">De aanvraag duurde te lang. Probeer het opnieuw.</string>
+    <string name="error_server">De dienst reageert momenteel niet. Probeer het later opnieuw.</string>
+    <string name="error_unknown">De wachttijden konden niet worden geladen.</string>
+    <string name="action_retry">Opnieuw proberen</string>
+
+    <string name="footer_data_by">Gegevens beschikbaar gesteld door</string>
+
+    <string name="notification_channel_name">Wachttijdmeldingen</string>
+    <string name="notification_channel_description">Waarschuwt je zodra een attractie je gewenste wachttijd bereikt.</string>
+    <string name="notification_title">%1$s heeft nu een korte wachttijd!</string>
+    <string name="notification_text">Huidige wachttijd: %1$d min (je doel was %2$d min).</string>
+    <string name="notification_summary_title">Wachttijdmeldingen</string>
+    <plurals name="notification_summary_text">
+        <item quantity="one">%d attractie heeft je doel bereikt</item>
+        <item quantity="other">%d attracties hebben je doel bereikt</item>
+    </plurals>
+</resources>

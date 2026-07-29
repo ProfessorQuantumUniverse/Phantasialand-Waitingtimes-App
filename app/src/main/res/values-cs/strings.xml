@@ -1,0 +1,86 @@
+<resources>
+    <string name="title_wait_times">Čekací doby</string>
+    <string name="sort_options">Možnosti řazení</string>
+    <string name="sort_ascending">Seřazeno vzestupně</string>
+    <string name="sort_descending">Seřazeno sestupně</string>
+    <string name="sort_by_name">Podle názvu</string>
+    <string name="sort_by_wait_time">Podle čekací doby</string>
+
+    <string name="filter_only_open">Pouze otevřené atrakce</string>
+    <string name="filter_open_of_total">Otevřeno %1$d z %2$d</string>
+    <string name="alerts_show">Zobrazit aktivní upozornění</string>
+    <string name="alerts_hide">Skrýt upozornění</string>
+
+    <string name="updated_just_now">Právě aktualizováno</string>
+    <!-- Czech "many" covers decimal values; the app only passes whole numbers, but the form is
+         required by CLDR and uses the genitive singular. -->
+    <plurals name="updated_minutes_ago">
+        <item quantity="one">Aktualizováno před %d minutou</item>
+        <item quantity="few">Aktualizováno před %d minutami</item>
+        <item quantity="many">Aktualizováno před %d minuty</item>
+        <item quantity="other">Aktualizováno před %d minutami</item>
+    </plurals>
+    <plurals name="updated_hours_ago">
+        <item quantity="one">Aktualizováno před %d hodinou</item>
+        <item quantity="few">Aktualizováno před %d hodinami</item>
+        <item quantity="many">Aktualizováno před %d hodiny</item>
+        <item quantity="other">Aktualizováno před %d hodinami</item>
+    </plurals>
+    <string name="updated_offline_prefix">Offline · %1$s</string>
+    <string name="updated_at_time">%1$s (%2$s)</string>
+
+    <string name="wait_minutes">%d min</string>
+    <string name="status_closed">Zavřeno</string>
+    <string name="status_maintenance">Údržba</string>
+    <string name="status_unknown">Neznámé</string>
+    <string name="favorite_add">Přidat k oblíbeným</string>
+    <string name="favorite_remove">Odebrat z oblíbených</string>
+    <string name="alert_add">Přidat upozornění</string>
+    <string name="alert_edit">Upravit upozornění</string>
+
+    <string name="alerts_active_title">Aktivní upozornění (%d)</string>
+    <string name="alerts_collapse">Skrýt upozornění</string>
+    <string name="alerts_remove">Odebrat upozornění</string>
+    <string name="alerts_target_reached">Cíl dosažen!</string>
+    <string name="alerts_target_format">Cíl: %d min</string>
+
+    <string name="alert_dialog_create_title">Vytvořit upozornění</string>
+    <string name="alert_dialog_edit_title">Upravit upozornění</string>
+    <string name="alert_dialog_current_wait">Aktuální čekací doba</string>
+    <string name="alert_dialog_notify_when">Upozornit mě, až čekací doba klesne nejvýše na</string>
+    <string name="alert_dialog_minutes_label">Minuty</string>
+    <string name="alert_dialog_minutes_suffix">min</string>
+    <string name="alert_dialog_invalid_input">Zadej číslo mezi %1$d a %2$d</string>
+    <string name="alert_dialog_delete">Smazat upozornění</string>
+    <string name="alert_dialog_cancel">Zrušit</string>
+    <string name="alert_dialog_save">Uložit</string>
+    <string name="alert_dialog_create">Vytvořit</string>
+    <string name="alert_dialog_permission_hint">Oznámení jsou vypnutá. Upozornění se uloží, ale nedostaneš zprávu.</string>
+
+    <string name="loading_title">Načítání čekacích dob</string>
+    <string name="loading_subtitle">Načítají se nejnovější data</string>
+    <string name="empty_all_closed_title">Všechny atrakce jsou zavřené</string>
+    <string name="empty_all_closed_subtitle">Vypni filtr, aby ses podíval i na zavřené atrakce.</string>
+    <string name="empty_no_data_title">Žádná data</string>
+    <string name="empty_no_data_subtitle">Stáhni seznam dolů a zkus to znovu.</string>
+    <string name="error_title">Něco se pokazilo</string>
+    <string name="error_no_connection">Žádné připojení. Zkontroluj síť a zkus to znovu.</string>
+    <string name="error_timeout">Požadavek trval příliš dlouho. Zkus to znovu.</string>
+    <string name="error_server">Služba právě neodpovídá. Zkus to prosím později.</string>
+    <string name="error_unknown">Čekací doby se nepodařilo načíst.</string>
+    <string name="action_retry">Zkusit znovu</string>
+
+    <string name="footer_data_by">Data poskytuje</string>
+
+    <string name="notification_channel_name">Upozornění na čekací doby</string>
+    <string name="notification_channel_description">Upozorní tě, jakmile atrakce dosáhne tvé cílové čekací doby.</string>
+    <string name="notification_title">%1$s má teď krátkou frontu!</string>
+    <string name="notification_text">Aktuální čekací doba: %1$d min (tvůj cíl byl %2$d min).</string>
+    <string name="notification_summary_title">Upozornění na čekací doby</string>
+    <plurals name="notification_summary_text">
+        <item quantity="one">%d atrakce dosáhla tvého cíle</item>
+        <item quantity="few">%d atrakce dosáhly tvého cíle</item>
+        <item quantity="many">%d atrakce dosáhlo tvého cíle</item>
+        <item quantity="other">%d atrakcí dosáhlo tvého cíle</item>
+    </plurals>
+</resources>
