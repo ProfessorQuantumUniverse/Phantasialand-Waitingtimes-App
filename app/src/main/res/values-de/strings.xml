@@ -1,0 +1,78 @@
+<resources>
+    <string name="title_wait_times">Wartezeiten</string>
+    <string name="sort_options">Sortieroptionen</string>
+    <string name="sort_ascending">Aufsteigend sortiert</string>
+    <string name="sort_descending">Absteigend sortiert</string>
+    <string name="sort_by_name">Nach Name</string>
+    <string name="sort_by_wait_time">Nach Wartezeit</string>
+
+    <string name="filter_only_open">Nur geöffnete Attraktionen</string>
+    <string name="filter_open_of_total">%1$d von %2$d geöffnet</string>
+    <string name="alerts_show">Aktive Alerts anzeigen</string>
+    <string name="alerts_hide">Alerts ausblenden</string>
+
+    <string name="updated_just_now">Gerade aktualisiert</string>
+    <plurals name="updated_minutes_ago">
+        <item quantity="one">Vor %d Minute aktualisiert</item>
+        <item quantity="other">Vor %d Minuten aktualisiert</item>
+    </plurals>
+    <plurals name="updated_hours_ago">
+        <item quantity="one">Vor %d Stunde aktualisiert</item>
+        <item quantity="other">Vor %d Stunden aktualisiert</item>
+    </plurals>
+    <string name="updated_offline_prefix">Offline · %1$s</string>
+    <string name="updated_at_time">%1$s (%2$s Uhr)</string>
+
+    <string name="wait_minutes">%d Min.</string>
+    <string name="status_closed">Geschlossen</string>
+    <string name="status_maintenance">Wartung</string>
+    <string name="status_unknown">Unbekannt</string>
+    <string name="favorite_add">Zu Favoriten hinzufügen</string>
+    <string name="favorite_remove">Aus Favoriten entfernen</string>
+    <string name="alert_add">Alert hinzufügen</string>
+    <string name="alert_edit">Alert bearbeiten</string>
+
+    <string name="alerts_active_title">Aktive Alerts (%d)</string>
+    <string name="alerts_collapse">Alerts ausblenden</string>
+    <string name="alerts_remove">Alert entfernen</string>
+    <string name="alerts_target_reached">Ziel erreicht!</string>
+    <string name="alerts_target_format">Ziel: %d Min.</string>
+
+    <string name="alert_dialog_create_title">Alert erstellen</string>
+    <string name="alert_dialog_edit_title">Alert bearbeiten</string>
+    <string name="alert_dialog_current_wait">Aktuelle Wartezeit</string>
+    <string name="alert_dialog_notify_when">Benachrichtigen, wenn die Wartezeit fällt auf höchstens</string>
+    <string name="alert_dialog_minutes_label">Minuten</string>
+    <string name="alert_dialog_minutes_suffix">Min.</string>
+    <string name="alert_dialog_invalid_input">Bitte eine Zahl zwischen %1$d und %2$d eingeben</string>
+    <string name="alert_dialog_delete">Alert löschen</string>
+    <string name="alert_dialog_cancel">Abbrechen</string>
+    <string name="alert_dialog_save">Speichern</string>
+    <string name="alert_dialog_create">Erstellen</string>
+    <string name="alert_dialog_permission_hint">Benachrichtigungen sind deaktiviert. Der Alert wird gespeichert, aber du erhältst keine Meldung.</string>
+
+    <string name="loading_title">Wartezeiten werden geladen</string>
+    <string name="loading_subtitle">Die neuesten Daten werden abgerufen</string>
+    <string name="empty_all_closed_title">Alle Attraktionen sind geschlossen</string>
+    <string name="empty_all_closed_subtitle">Deaktiviere den Filter, um auch geschlossene Attraktionen zu sehen.</string>
+    <string name="empty_no_data_title">Keine Daten vorhanden</string>
+    <string name="empty_no_data_subtitle">Zieh die Liste nach unten, um es erneut zu versuchen.</string>
+    <string name="error_title">Da ist etwas schiefgelaufen</string>
+    <string name="error_no_connection">Keine Verbindung. Prüfe dein Netzwerk und versuch es erneut.</string>
+    <string name="error_timeout">Die Anfrage hat zu lange gedauert. Versuch es gleich noch einmal.</string>
+    <string name="error_server">Der Dienst antwortet gerade nicht. Bitte später erneut versuchen.</string>
+    <string name="error_unknown">Die Wartezeiten konnten nicht geladen werden.</string>
+    <string name="action_retry">Erneut versuchen</string>
+
+    <string name="footer_data_by">Daten bereitgestellt von</string>
+
+    <string name="notification_channel_name">Wartezeit-Alerts</string>
+    <string name="notification_channel_description">Meldung, sobald eine Attraktion deine Zielwartezeit erreicht.</string>
+    <string name="notification_title">%1$s ist jetzt kurz!</string>
+    <string name="notification_text">Aktuelle Wartezeit: %1$d Min. (dein Ziel war %2$d Min.).</string>
+    <string name="notification_summary_title">Wartezeit-Alerts</string>
+    <plurals name="notification_summary_text">
+        <item quantity="one">%d Attraktion hat dein Ziel erreicht</item>
+        <item quantity="other">%d Attraktionen haben dein Ziel erreicht</item>
+    </plurals>
+</resources>

@@ -2,66 +2,94 @@ package com.quantum_prof.phantalandwaittimes.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Modern Dynamic Glasmorphism Color Palette
-val Primary = Color(0xFF6EC471) // Violet
-val PrimaryVariant = Color(0xFF8BC34A) // Deeper violet
-val Secondary = Color(0xFF06B6D4) // Cyan
-val SecondaryVariant = Color(0xFF0891B2) // Deeper cyan
-val Tertiary = Color(0xFFF6C01E) // Pink accent
+// -----------------------------------------------------------------------------------------------
+// Brand palette
+//
+// Built around the park's green with an amber accent. Light and dark get their own tones instead
+// of sharing one set — previously both schemes reused the same values, which left the light theme
+// with dark-theme surfaces and poor contrast.
+// -----------------------------------------------------------------------------------------------
 
-val Background = Color(0xFF0F0F23) // Deep dark blue
-val BackgroundSecondary = Color(0xFF1E1B4B) // Rich indigo
-val BackgroundGradientEnd = Color(0xFF312E81) // Lighter indigo for gradients
-val Surface = Color(0xFF1E293B)
-val SurfaceVariant = Color(0xFF334155)
-val SurfaceElevated = Color(0xFF475569)
+// Light scheme
+val LightPrimary = Color(0xFF2E7D46)
+val LightOnPrimary = Color(0xFFFFFFFF)
+val LightPrimaryContainer = Color(0xFFB6F0C4)
+val LightOnPrimaryContainer = Color(0xFF00210E)
 
-val OnPrimary = Color(0xFFFFFFFF)
-val OnSecondary = Color(0xFFFFFFFF)
-val OnBackground = Color(0xFFE2E8F0)
-val OnSurface = Color(0xFFF8FAFC)
-val OnSurfaceVariant = Color(0xFFCBD5E1)
+val LightSecondary = Color(0xFF0E7490)
+val LightOnSecondary = Color(0xFFFFFFFF)
+val LightSecondaryContainer = Color(0xFFC5EDFB)
+val LightOnSecondaryContainer = Color(0xFF002632)
 
-// Enhanced Glass effect colors with better opacity and glow
-val GlassBackground = Color(0x1AFFFFFF)
-val GlassBackgroundElevated = Color(0x26FFFFFF)
-val GlassBorder = Color(0x40FFFFFF)
-val GlassHighlight = Color(0x80FFFFFF)
-val GlassShadow = Color(0x40000000)
+val LightTertiary = Color(0xFF8A5A00)
+val LightOnTertiary = Color(0xFFFFFFFF)
+val LightTertiaryContainer = Color(0xFFFFDEA6)
+val LightOnTertiaryContainer = Color(0xFF2B1700)
 
-// Dynamic wait time colors with glassmorphism glow
-val WaitTimeShort = Color(0xFF10B981) // Emerald
-val WaitTimeShortGlow = Color(0x4010B981)
-val WaitTimeMedium = Color(0xFFF59E0B) // Amber
-val WaitTimeMediumGlow = Color(0x40F59E0B)
-val WaitTimeLong = Color(0xFFEF4444) // Red
-val WaitTimeLongGlow = Color(0x40EF4444)
-val WaitTimeVeryLong = Color(0xFFDC2626) // Dark red
-val WaitTimeVeryLongGlow = Color(0x40DC2626)
-val WaitTimeClosed = Color(0xFF64748B) // Slate
-val WaitTimeClosedGlow = Color(0x4064748B)
+val LightBackground = Color(0xFFF6F7FB)
+val LightOnBackground = Color(0xFF191C1A)
+val LightSurface = Color(0xFFFFFFFF)
+val LightOnSurface = Color(0xFF191C1A)
+val LightSurfaceVariant = Color(0xFFE6EBE6)
+val LightOnSurfaceVariant = Color(0xFF414942)
+val LightOutline = Color(0xFF717972)
+val LightOutlineVariant = Color(0xFFC1C9C1)
 
-// Enhanced alert colors
-val AlertBackground = Color(0x33293EF1)
-val AlertBorder = Color(0xFF6366F1)
-val AlertText = Color(0xFFE0E7FF)
-val AlertGlow = Color(0x406366F1)
+val LightError = Color(0xFFB3261E)
+val LightOnError = Color(0xFFFFFFFF)
+val LightErrorContainer = Color(0xFFF9DEDC)
+val LightOnErrorContainer = Color(0xFF410E0B)
 
-// Favorite indicator
-val FavoriteActive = Color(0xFFFBBF24) // Amber
-val FavoriteActiveGlow = Color(0x40FBBF24)
-val FavoriteInactive = Color(0xFF6B7280)
+// Dark scheme
+val DarkPrimary = Color(0xFF7BD79A)
+val DarkOnPrimary = Color(0xFF00391C)
+val DarkPrimaryContainer = Color(0xFF19532F)
+val DarkOnPrimaryContainer = Color(0xFFB6F0C4)
 
-// Status indicators
-val StatusOnline = Color(0xFF10B981)
-val StatusOffline = Color(0xFFEF4444)
-val StatusLoading = Color(0xFF8B5CF6)
+val DarkSecondary = Color(0xFF74D3ED)
+val DarkOnSecondary = Color(0xFF003543)
+val DarkSecondaryContainer = Color(0xFF004E60)
+val DarkOnSecondaryContainer = Color(0xFFC5EDFB)
 
-// Legacy colors (keep for compatibility)
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val DarkTertiary = Color(0xFFF6C01E)
+val DarkOnTertiary = Color(0xFF3F2E00)
+val DarkTertiaryContainer = Color(0xFF684300)
+val DarkOnTertiaryContainer = Color(0xFFFFDEA6)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val DarkBackground = Color(0xFF0E1116)
+val DarkOnBackground = Color(0xFFE1E3DF)
+val DarkSurface = Color(0xFF171B21)
+val DarkOnSurface = Color(0xFFE1E3DF)
+val DarkSurfaceVariant = Color(0xFF262C33)
+val DarkOnSurfaceVariant = Color(0xFFC0C9C2)
+val DarkOutline = Color(0xFF8B938C)
+val DarkOutlineVariant = Color(0xFF414942)
+
+val DarkError = Color(0xFFF2B8B5)
+val DarkOnError = Color(0xFF601410)
+val DarkErrorContainer = Color(0xFF8C1D18)
+val DarkOnErrorContainer = Color(0xFFF9DEDC)
+
+// -----------------------------------------------------------------------------------------------
+// Semantic colours that are not part of the Material scheme
+// -----------------------------------------------------------------------------------------------
+
+/** Wait-time buckets. Each has a light and a dark variant so contrast holds in both themes. */
+val WaitShortLight = Color(0xFF1B7F4B)
+val WaitShortDark = Color(0xFF57D98D)
+val WaitMediumLight = Color(0xFF9A6400)
+val WaitMediumDark = Color(0xFFF0B429)
+val WaitLongLight = Color(0xFFC2410C)
+val WaitLongDark = Color(0xFFFB923C)
+val WaitVeryLongLight = Color(0xFFB3261E)
+val WaitVeryLongDark = Color(0xFFF87171)
+val WaitClosedLight = Color(0xFF6B7280)
+val WaitClosedDark = Color(0xFF9CA3AF)
+
+/** Favourite indicator. */
+val FavoriteLight = Color(0xFFC98A00)
+val FavoriteDark = Color(0xFFFBBF24)
+
+/** Scrim drawn over the park photo so cards and text stay legible. */
+val ScrimLight = Color(0xFFF6F7FB)
+val ScrimDark = Color(0xFF0E1116)

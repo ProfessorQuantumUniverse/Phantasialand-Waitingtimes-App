@@ -1,0 +1,84 @@
+<resources>
+    <string name="title_wait_times">Czasy oczekiwania</string>
+    <string name="sort_options">Opcje sortowania</string>
+    <string name="sort_ascending">Sortowanie rosnąco</string>
+    <string name="sort_descending">Sortowanie malejąco</string>
+    <string name="sort_by_name">Według nazwy</string>
+    <string name="sort_by_wait_time">Według czasu oczekiwania</string>
+
+    <string name="filter_only_open">Tylko otwarte atrakcje</string>
+    <string name="filter_open_of_total">Otwarte: %1$d z %2$d</string>
+    <string name="alerts_show">Pokaż aktywne alerty</string>
+    <string name="alerts_hide">Ukryj alerty</string>
+
+    <string name="updated_just_now">Zaktualizowano przed chwilą</string>
+    <plurals name="updated_minutes_ago">
+        <item quantity="one">Zaktualizowano %d minutę temu</item>
+        <item quantity="few">Zaktualizowano %d minuty temu</item>
+        <item quantity="many">Zaktualizowano %d minut temu</item>
+        <item quantity="other">Zaktualizowano %d minuty temu</item>
+    </plurals>
+    <plurals name="updated_hours_ago">
+        <item quantity="one">Zaktualizowano %d godzinę temu</item>
+        <item quantity="few">Zaktualizowano %d godziny temu</item>
+        <item quantity="many">Zaktualizowano %d godzin temu</item>
+        <item quantity="other">Zaktualizowano %d godziny temu</item>
+    </plurals>
+    <string name="updated_offline_prefix">Offline · %1$s</string>
+    <string name="updated_at_time">%1$s (%2$s)</string>
+
+    <string name="wait_minutes">%d min</string>
+    <string name="status_closed">Zamknięte</string>
+    <string name="status_maintenance">Konserwacja</string>
+    <string name="status_unknown">Nieznany</string>
+    <string name="favorite_add">Dodaj do ulubionych</string>
+    <string name="favorite_remove">Usuń z ulubionych</string>
+    <string name="alert_add">Dodaj alert</string>
+    <string name="alert_edit">Edytuj alert</string>
+
+    <string name="alerts_active_title">Aktywne alerty (%d)</string>
+    <string name="alerts_collapse">Ukryj alerty</string>
+    <string name="alerts_remove">Usuń alert</string>
+    <string name="alerts_target_reached">Cel osiągnięty!</string>
+    <string name="alerts_target_format">Cel: %d min</string>
+
+    <string name="alert_dialog_create_title">Utwórz alert</string>
+    <string name="alert_dialog_edit_title">Edytuj alert</string>
+    <string name="alert_dialog_current_wait">Obecny czas oczekiwania</string>
+    <string name="alert_dialog_notify_when">Powiadom mnie, gdy czas oczekiwania spadnie do maksymalnie</string>
+    <string name="alert_dialog_minutes_label">Minuty</string>
+    <string name="alert_dialog_minutes_suffix">min</string>
+    <string name="alert_dialog_invalid_input">Podaj liczbę od %1$d do %2$d</string>
+    <string name="alert_dialog_delete">Usuń alert</string>
+    <string name="alert_dialog_cancel">Anuluj</string>
+    <string name="alert_dialog_save">Zapisz</string>
+    <string name="alert_dialog_create">Utwórz</string>
+    <string name="alert_dialog_permission_hint">Powiadomienia są wyłączone. Alert zostanie zapisany, ale nie otrzymasz powiadomienia.</string>
+
+    <string name="loading_title">Wczytywanie czasów oczekiwania</string>
+    <string name="loading_subtitle">Pobieranie najnowszych danych</string>
+    <string name="empty_all_closed_title">Wszystkie atrakcje są zamknięte</string>
+    <string name="empty_all_closed_subtitle">Wyłącz filtr, aby zobaczyć również zamknięte atrakcje.</string>
+    <string name="empty_no_data_title">Brak danych</string>
+    <string name="empty_no_data_subtitle">Pociągnij listę w dół, aby spróbować ponownie.</string>
+    <string name="error_title">Coś poszło nie tak</string>
+    <string name="error_no_connection">Brak połączenia. Sprawdź sieć i spróbuj ponownie.</string>
+    <string name="error_timeout">Żądanie trwało zbyt długo. Spróbuj ponownie.</string>
+    <string name="error_server">Usługa chwilowo nie odpowiada. Spróbuj później.</string>
+    <string name="error_unknown">Nie udało się wczytać czasów oczekiwania.</string>
+    <string name="action_retry">Spróbuj ponownie</string>
+
+    <string name="footer_data_by">Dane udostępnia</string>
+
+    <string name="notification_channel_name">Alerty czasu oczekiwania</string>
+    <string name="notification_channel_description">Powiadamia, gdy atrakcja osiągnie Twój docelowy czas oczekiwania.</string>
+    <string name="notification_title">%1$s ma teraz krótką kolejkę!</string>
+    <string name="notification_text">Obecny czas oczekiwania: %1$d min (Twój cel to %2$d min).</string>
+    <string name="notification_summary_title">Alerty czasu oczekiwania</string>
+    <plurals name="notification_summary_text">
+        <item quantity="one">%d atrakcja osiągnęła Twój cel</item>
+        <item quantity="few">%d atrakcje osiągnęły Twój cel</item>
+        <item quantity="many">%d atrakcji osiągnęło Twój cel</item>
+        <item quantity="other">%d atrakcji osiągnęło Twój cel</item>
+    </plurals>
+</resources>

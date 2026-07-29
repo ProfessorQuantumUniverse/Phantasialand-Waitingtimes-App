@@ -1,257 +1,227 @@
 package com.quantum_prof.phantalandwaittimes.ui.theme.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.NotificationAdd
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import com.quantum_prof.phantalandwaittimes.R
 import com.quantum_prof.phantalandwaittimes.data.AttractionWaitTime
 import com.quantum_prof.phantalandwaittimes.data.notification.WaitTimeAlert
+import com.quantum_prof.phantalandwaittimes.ui.waitTimeLabel
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val PRESET_MINUTES = listOf(10, 20, 30, 45)
+
+/**
+ * Create or edit the alert threshold for one attraction.
+ *
+ * Built on [AlertDialog] so it inherits Material's sizing, insets and predictive-back handling
+ * instead of hand-rolling a `Dialog` + `Card`. Input is validated inline rather than only by
+ * disabling the confirm button, so a typo explains itself.
+ */
 @Composable
 fun WaitTimeAlertDialog(
     attraction: AttractionWaitTime,
     currentAlert: WaitTimeAlert?,
+    notificationsEnabled: Boolean,
     onDismiss: () -> Unit,
     onSetAlert: (Int) -> Unit,
     onRemoveAlert: () -> Unit
 ) {
-    var targetTimeText by remember {
-        mutableStateOf(currentAlert?.targetTime?.toString() ?: "30")
-    }
     val isEditing = currentAlert != null
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Header with animation
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+    var targetText by rememberSaveable(currentAlert?.targetMinutes) {
+        mutableStateOf(
+            (currentAlert?.targetMinutes ?: WaitTimeAlert.DEFAULT_TARGET_MINUTES).toString()
+        )
+    }
+
+    val parsedTarget = remember(targetText) {
+        targetText.trim().toIntOrNull()
+            ?.takeIf { it in WaitTimeAlert.MIN_TARGET_MINUTES..WaitTimeAlert.MAX_TARGET_MINUTES }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(
+                    if (isEditing) R.string.alert_dialog_edit_title else R.string.alert_dialog_create_title
+                )
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = attraction.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    // Schöneres Alert Icon mit gestapelten Elementen
-                    Box {
-                        Icon(
-                            imageVector = Icons.Default.NotificationAdd,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .size(28.dp)
-                                .pulsingGlow(MaterialTheme.colorScheme.primary, 2000)
-                        )
-
-                        // Kleiner animierter Punkt
-                        if (!isEditing) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .offset(x = 20.dp, y = 0.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.tertiary,
-                                        CircleShape
-                                    )
-                                    .pulsingGlow(MaterialTheme.colorScheme.tertiary, 1000)
-                            )
-                        }
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = if (isEditing) "Alert bearbeiten" else "Alert erstellen",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = attraction.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Current wait time info
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Aktuelle Wartezeit:",
+                            text = stringResource(R.string.alert_dialog_current_wait),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "${attraction.waitTimeMinutes} min",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            text = waitTimeLabel(attraction),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
-                // Target time input with quick preset buttons
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Benachrichtigen wenn Wartezeit unter:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                Text(
+                    text = stringResource(R.string.alert_dialog_notify_when),
+                    style = MaterialTheme.typography.bodyMedium
+                )
 
-                    // Quick preset buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        listOf(10, 20, 30, 45).forEach { preset ->
-                            FilterChip(
-                                onClick = { targetTimeText = preset.toString() },
-                                label = {
-                                    Text(
-                                        "${preset}min",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                },
-                                selected = targetTimeText == preset.toString(),
-                                modifier = Modifier.weight(1f)
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    PRESET_MINUTES.forEach { preset ->
+                        FilterChip(
+                            selected = parsedTarget == preset,
+                            onClick = { targetText = preset.toString() },
+                            label = {
+                                Text(
+                                    text = stringResource(R.string.wait_minutes, preset),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = targetText,
+                    onValueChange = { input ->
+                        // Only digits can ever reach the state, so the field cannot hold junk.
+                        targetText = input.filter(Char::isDigit).take(3)
+                    },
+                    label = { Text(stringResource(R.string.alert_dialog_minutes_label)) },
+                    suffix = { Text(stringResource(R.string.alert_dialog_minutes_suffix)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    isError = targetText.isNotEmpty() && parsedTarget == null,
+                    supportingText = {
+                        if (targetText.isNotEmpty() && parsedTarget == null) {
+                            Text(
+                                stringResource(
+                                    R.string.alert_dialog_invalid_input,
+                                    WaitTimeAlert.MIN_TARGET_MINUTES,
+                                    WaitTimeAlert.MAX_TARGET_MINUTES
+                                )
                             )
                         }
-                    }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = targetTimeText,
-                        onValueChange = { targetTimeText = it },
-                        label = { Text("Minuten") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        suffix = { Text("min") }
+                if (!notificationsEnabled) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.alert_dialog_permission_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Action buttons
                 if (isEditing) {
-                    // Editing layout: Delete button on top, action buttons below
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        OutlinedButton(
-                            onClick = {
-                                onRemoveAlert()
-                                onDismiss()
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.NotificationsOff,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Alert löschen")
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = onDismiss,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Abbrechen")
-                            }
-
-                            Button(
-                                onClick = {
-                                    val targetTime = targetTimeText.toIntOrNull()
-                                    if (targetTime != null && targetTime > 0) {
-                                        onSetAlert(targetTime)
-                                        onDismiss()
-                                    }
-                                },
-                                enabled = targetTimeText.toIntOrNull() != null && targetTimeText.toIntOrNull()!! > 0,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Aktualisieren")
-                            }
-                        }
-                    }
-                } else {
-                    // New alert layout: just the action buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            onRemoveAlert()
+                            onDismiss()
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Abbrechen")
-                        }
-
-                        Button(
-                            onClick = {
-                                val targetTime = targetTimeText.toIntOrNull()
-                                if (targetTime != null && targetTime > 0) {
-                                    onSetAlert(targetTime)
-                                    onDismiss()
-                                }
-                            },
-                            enabled = targetTimeText.toIntOrNull() != null && targetTimeText.toIntOrNull()!! > 0,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Erstellen")
-                        }
+                        Icon(
+                            imageVector = Icons.Default.NotificationsOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.alert_dialog_delete))
                     }
                 }
             }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    parsedTarget?.let {
+                        onSetAlert(it)
+                        onDismiss()
+                    }
+                },
+                enabled = parsedTarget != null
+            ) {
+                Text(
+                    stringResource(
+                        if (isEditing) R.string.alert_dialog_save else R.string.alert_dialog_create
+                    )
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.alert_dialog_cancel))
+            }
         }
-    }
+    )
 }

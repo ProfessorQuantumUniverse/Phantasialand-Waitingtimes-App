@@ -1,274 +1,235 @@
 package com.quantum_prof.phantalandwaittimes.ui.theme.main
 
-import android.content.SharedPreferences
-import androidx.core.content.edit
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.quantum_prof.phantalandwaittimes.data.AttractionWaitTime
+import com.quantum_prof.phantalandwaittimes.data.UserPreferences
+import com.quantum_prof.phantalandwaittimes.data.UserPreferencesRepository
 import com.quantum_prof.phantalandwaittimes.data.WaitTimeRepository
-import com.quantum_prof.phantalandwaittimes.data.WaitTimeResult
+import com.quantum_prof.phantalandwaittimes.data.WaitTimeSnapshot
 import com.quantum_prof.phantalandwaittimes.data.notification.AlertRepository
 import com.quantum_prof.phantalandwaittimes.data.notification.WaitTimeAlert
-import com.quantum_prof.phantalandwaittimes.di.StorageModule.KEY_FAVORITE_CODES
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
-import java.util.Locale
 
-// --- GEÄNDERT: WaitTimeUiState erweitert ---
+/** Why a refresh failed. The UI maps this onto a localised message. */
+enum class WaitTimeError {
+    NO_CONNECTION,
+    TIMEOUT,
+    SERVER,
+    UNKNOWN
+}
+
+/**
+ * Marked [Immutable] because it is only ever rebuilt, never mutated in place. Without this the
+ * `List`/`Set` members make the whole class unstable to the Compose compiler, which forces the
+ * entire screen to recompose on every emission — including once a minute for the freshness label.
+ */
+@Immutable
 data class WaitTimeUiState(
+    /** True only for the very first load, when there is nothing to show yet. */
     val isLoading: Boolean = false,
+    /** True while a refresh runs on top of data that is already on screen. */
+    val isRefreshing: Boolean = false,
     val waitTimes: List<AttractionWaitTime> = emptyList(),
-    val error: String? = null,
-    val lastUpdated: Long = 0L, // Zeitpunkt der letzten erfolgreichen Aktualisierung
-    val currentSortType: SortType = SortType.NAME, // Standard-Sortierung
-    val currentSortDirection: SortDirection = SortDirection.ASCENDING, // Standard-Richtung
-    val isOfflineData: Boolean = false, // Flag für Offline-Daten
-    // --- NEU: Status für Favoriten und Filter ---
-    val favoriteCodes: Set<String> = emptySet(), // Set der Favoriten-Attraktionscodes
-    val filterOnlyOpen: Boolean = false, // Flag, ob nur geöffnete Attraktionen angezeigt werden
-    val activeAlerts: List<WaitTimeAlert> = emptyList()
+    val error: WaitTimeError? = null,
+    /** When the displayed data was fetched from the API (0 if never). */
+    val lastUpdated: Long = 0L,
+    val isOfflineData: Boolean = false,
+    val sortType: SortType = SortType.NAME,
+    val sortDirection: SortDirection = SortDirection.ASCENDING,
+    val favoriteCodes: Set<String> = emptySet(),
+    val filterOnlyOpen: Boolean = false,
+    val activeAlerts: List<WaitTimeAlert> = emptyList(),
+    /**
+     * Codes of [activeAlerts], precomputed so the list can do an O(1) membership test per row
+     * instead of rebuilding the set on every read.
+     */
+    val activeAlertCodes: Set<String> = emptySet(),
+    /** Counts over the unfiltered data, so the filter row can show what it is hiding. */
+    val totalCount: Int = 0,
+    val openCount: Int = 0
+) {
+    val hasContent: Boolean get() = waitTimes.isNotEmpty()
+}
+
+/**
+ * The parts of the state this ViewModel owns directly; everything else is derived.
+ *
+ * Note that this tracks only whether a request is running, not how it should be presented.
+ * "First load" versus "refresh on top of existing data" follows from [snapshot] and is computed
+ * in [MainViewModel.buildUiState].
+ */
+private data class FetchState(
+    val snapshot: WaitTimeSnapshot? = null,
+    val isRequestInFlight: Boolean = false,
+    val error: WaitTimeError? = null
 )
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val repository: WaitTimeRepository,
-    // --- NEU: SharedPreferences injecten ---
-    private val sharedPreferences: SharedPreferences,
+    private val preferencesRepository: UserPreferencesRepository,
     private val alertRepository: AlertRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(WaitTimeUiState())
-    val uiState: StateFlow<WaitTimeUiState> = _uiState.asStateFlow()
+    private val fetchState = MutableStateFlow(FetchState())
 
-    // --- NEU: Zwischenspeicher für die originalen, ungefilterten Daten ---
-    private var originalFetchedWaitTimes: List<AttractionWaitTime> = emptyList()
+    private var refreshJob: Job? = null
+
+    /**
+     * The screen state is fully derived: sorting and filtering are recomputed from the last
+     * fetched snapshot whenever the data or the user's preferences change. There is no second
+     * copy of the list to keep in sync.
+     */
+    val uiState: StateFlow<WaitTimeUiState> = combine(
+        fetchState,
+        preferencesRepository.preferences,
+        alertRepository.alerts
+    ) { fetch, preferences, alerts ->
+        buildUiState(fetch, preferences, alerts)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+        initialValue = WaitTimeUiState(isLoading = true)
+    )
 
     init {
-        loadFavorites() // Lade Favoriten ZUERST
-        loadAlerts()
-        fetchWaitTimes() // Dann lade die Wartezeiten (wendet initiale Filter/Sortierung an)
+        refresh(force = false)
     }
 
-    // --- NEU: Funktion zum Laden der Favoriten aus SharedPreferences ---
-    private fun loadFavorites() {
-        val favorites = sharedPreferences.getStringSet(KEY_FAVORITE_CODES, emptySet()) ?: emptySet()
-        _uiState.update { it.copy(favoriteCodes = favorites) }
-    }
+    /**
+     * Loads the wait times. [force] bypasses the repository cache and is what pull-to-refresh uses;
+     * the cheap non-forced variant is used on start-up and when returning to the screen.
+     */
+    fun refresh(force: Boolean = true) {
+        // Guard on the job rather than on a flag: if a previous request ever died without
+        // clearing its flag, a stale flag would lock the screen on the loading state forever.
+        if (refreshJob?.isActive == true) return
 
-    private fun loadAlerts() {
-        viewModelScope.launch {
-            val alerts = alertRepository.getAlerts()
-            _uiState.update { it.copy(activeAlerts = alerts) }
+        fetchState.update { it.copy(isRequestInFlight = true) }
+
+        refreshJob = viewModelScope.launch {
+            try {
+                repository.getWaitTimes(forceRefresh = force)
+                    .onSuccess { snapshot ->
+                        fetchState.update {
+                            it.copy(
+                                snapshot = snapshot,
+                                // Cached data means the network call did not succeed this time,
+                                // so a previous error stays visible.
+                                error = if (snapshot.isFromCache) it.error else null
+                            )
+                        }
+                    }
+                    .onFailure { throwable ->
+                        fetchState.update { it.copy(error = throwable.toWaitTimeError()) }
+                    }
+            } finally {
+                // Runs on cancellation too, so the spinner always clears.
+                fetchState.update { it.copy(isRequestInFlight = false) }
+            }
         }
     }
 
-    fun addAlert(attraction: AttractionWaitTime, targetTime: Int) {
+    /** Called when the screen becomes visible again; a no-op if the cached data is still fresh. */
+    fun refreshIfStale() = refresh(force = false)
+
+    fun toggleSortDirection() {
+        val preferences = preferencesRepository.preferences.value
+        setSort(preferences.sortType, preferences.sortDirection.opposite)
+    }
+
+    fun changeSortType(type: SortType) {
+        setSort(type, preferencesRepository.preferences.value.sortDirection)
+    }
+
+    private fun setSort(type: SortType, direction: SortDirection) {
+        viewModelScope.launch { preferencesRepository.setSort(type, direction) }
+    }
+
+    fun toggleFavorite(code: String) {
+        viewModelScope.launch { preferencesRepository.toggleFavorite(code) }
+    }
+
+    fun setFilterOnlyOpen(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setFilterOnlyOpen(enabled) }
+    }
+
+    fun addAlert(attraction: AttractionWaitTime, targetMinutes: Int) {
         viewModelScope.launch {
-            val newAlert = WaitTimeAlert(
-                attractionCode = attraction.code,
-                attractionName = attraction.name,
-                targetTime = targetTime
+            alertRepository.addAlert(
+                WaitTimeAlert(
+                    attractionCode = attraction.code,
+                    attractionName = attraction.name,
+                    targetMinutes = targetMinutes,
+                    createdAt = System.currentTimeMillis()
+                )
             )
-            alertRepository.addAlert(newAlert)
-            loadAlerts() // Reload alerts to update UI
         }
     }
 
     fun removeAlert(attractionCode: String) {
-        viewModelScope.launch {
-            alertRepository.removeAlert(attractionCode)
-            loadAlerts() // Reload alerts to update UI
-        }
+        viewModelScope.launch { alertRepository.removeAlert(attractionCode) }
     }
 
-    fun toggleSortDirection() {
-        // Bestimme die neue Richtung
-        val newDirection = if (_uiState.value.currentSortDirection == SortDirection.ASCENDING) {
-            SortDirection.DESCENDING
-        } else {
-            SortDirection.ASCENDING
-        }
-
-        // Update die Richtung im State *zuerst*
-        _uiState.update { it.copy(currentSortDirection = newDirection) }
-
-        // Wende Filter und die *neue* Sortierung auf die ORIGINALEN Daten an
-        applyFiltersAndSorting(originalFetchedWaitTimes)
-    }
-
-    // --- NEU: Funktion zum Umschalten eines Favoriten ---
-    fun toggleFavorite(code: String) {
-        val currentFavorites = _uiState.value.favoriteCodes
-        val newFavorites = if (currentFavorites.contains(code)) {
-            currentFavorites - code // Entfernen
-        } else {
-            currentFavorites + code // Hinzufügen
-        }
-
-        // Speichere in SharedPreferences mit KTX
-        sharedPreferences.edit {
-            putStringSet(KEY_FAVORITE_CODES, newFavorites)
-        }
-
-        // Aktualisiere den UI State mit den neuen Favoriten
-        _uiState.update { it.copy(favoriteCodes = newFavorites) }
-
-        // Wende Filter und Sortierung auf die ORIGINALEN Daten an
-        applyFiltersAndSorting(originalFetchedWaitTimes)
-    }
-
-    // --- NEU: Funktion zum Setzen des Filters für offene Attraktionen ---
-    fun setFilterOnlyOpen(enabled: Boolean) {
-        // Nur fortfahren, wenn sich der Wert ändert
-        if (enabled == _uiState.value.filterOnlyOpen) return
-
-        // Update den Filter-Status im State
-        _uiState.update { it.copy(filterOnlyOpen = enabled) }
-
-        // Wende Filter und Sortierung auf die ORIGINALEN Daten an
-        applyFiltersAndSorting(originalFetchedWaitTimes)
-    }
-
-
-    fun fetchWaitTimes(isRefresh: Boolean = false) {
-        if (_uiState.value.isLoading && !isRefresh) return
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = if (isRefresh) null else it.error) } // Fehler nur bei explizitem Refresh löschen
-
-            val result: Result<WaitTimeResult> = repository.getPhantasialandWaitTimes(forceRefresh = isRefresh)
-
-            result.onSuccess { (times, isFromCache) ->
-                // Speichere die Originaldaten (optional, aber gut für reines Filtern/Sortieren)
-                originalFetchedWaitTimes = times
-
-                // Wende aktuelle Filter UND Sortierung auf die NEUEN Daten an
-                // Diese Funktion aktualisiert auch den waitTimes-Teil des States
-                applyFiltersAndSorting(times)
-
-                // Update restlichen State (isLoading, Offline-Status, Fehler, Zeitstempel)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        isOfflineData = isFromCache,
-                        // Fehler nur löschen, wenn Daten frisch von API kamen
-                        error = if (!isFromCache) null else it.error,
-                        // Aktualisiere Timestamp nur bei frischen Daten oder wenn noch keiner gesetzt
-                        lastUpdated = if (!isFromCache || it.lastUpdated == 0L) System.currentTimeMillis() else it.lastUpdated
-                        // waitTimes wird bereits durch applyFiltersAndSorting gesetzt
-                        // favoriteCodes bleiben unverändert (werden separat verwaltet)
-                        // filterOnlyOpen bleibt unverändert (wird separat verwaltet)
-                    )
-                }
-
-            }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "Laden fehlgeschlagen: ${throwable.localizedMessage ?: "Unbekannter Fehler"}",
-                        // Behalte alte Daten bei, markiere sie aber als offline, falls vorhanden
-                        isOfflineData = it.waitTimes.isNotEmpty()
-                    )
-                }
-            }
-        }
-    }
-
-    // --- GEÄNDERT: changeSortOrder wendet Filterung & Sortierung neu an ---
-    fun changeSortOrder(newType: SortType, newDirection: SortDirection) {
-        if (newType == _uiState.value.currentSortType && newDirection == _uiState.value.currentSortDirection) {
-            return
-        }
-
-        // Update die Sortierparameter im State *zuerst*
-        _uiState.update { it.copy(currentSortType = newType, currentSortDirection = newDirection) }
-
-        // Wende Filter und die *neue* Sortierung auf die ORIGINALEN Daten an
-        applyFiltersAndSorting(originalFetchedWaitTimes)
-    }
-
-
-
-
-    // --- GEÄNDERT: Private Hilfsfunktion zum Anwenden der Sortierung (umbenannt) ---
-    // Wird jetzt von applyFiltersAndSorting aufgerufen
-    private fun applySortingInternal(
-        list: List<AttractionWaitTime>,
-        sortType: SortType,
-        sortDirection: SortDirection,
-        favorites: Set<String> // Set der Favoriten-Codes
-    ): List<AttractionWaitTime> {
-
-        // 1. Primärer Comparator: Favoriten immer zuerst
-        //    compareByDescending: true (ist Favorit) wird als "größer" betrachtet und kommt daher bei DESC zuerst.
-        val favoritesComparator = compareByDescending<AttractionWaitTime> { it.code in favorites }
-
-        // 2. Sekundärer Comparator: Basierend auf der Benutzerauswahl (Name oder Wartezeit)
-        val secondaryComparator: Comparator<AttractionWaitTime> = when (sortType) {
-            SortType.NAME -> {
-                // Sortiere nach Name:
-                // - nullsLast(): Namenlose Einträge ans Ende.
-                // - String.CASE_INSENSITIVE_ORDER: Ignoriere Groß/Kleinschreibung.
-                compareBy(nullsLast(String.CASE_INSENSITIVE_ORDER)) { it.name }
-            }
-            SortType.WAIT_TIME -> {
-                // Sortiere nach Wartezeit:
-                compareBy<AttractionWaitTime, Int?>(nullsLast()) { attraction ->
-                    // Behandle nicht-geöffnete Attraktionen für die Sortierung:
-                    // Setze ihre "effektive" Wartezeit auf einen sehr hohen Wert, damit sie bei ASC ans Ende kommen.
-                    if (attraction.status.lowercase(Locale.GERMANY) == "opened") {
-                        attraction.waitTimeMinutes
-                    } else {
-                        Int.MAX_VALUE // Geschlossene/unbekannte Attraktionen gelten als "längste" Wartezeit
-                    }
-                }.thenBy(nullsLast(String.CASE_INSENSITIVE_ORDER)) {
-                    // Bei gleicher effektiver Wartezeit (z.B. alle geschlossenen), sortiere nach Name
-                    it.name
-                }
-            }
-            // Zukünftige Sortieroptionen könnten hier hinzugefügt werden
-            // z.B. SortType.FAVORITE (obwohl Favoriten bereits primär behandelt werden)
-        }
-
-        // 3. Kombiniere die Comparators: Erst nach Favorit, dann nach dem sekundären Kriterium
-        val finalComparator = favoritesComparator.thenComparing(secondaryComparator)
-
-        // 4. Wende die Sortierung an
-        return if (sortDirection == SortDirection.ASCENDING) {
-            // Aufsteigend: Favoriten zuerst, dann nach sekundärem Kriterium aufsteigend
-            list.sortedWith(finalComparator)
-        } else {
-            // Absteigend: Favoriten bleiben zuerst, aber die sekundäre Sortierung wird umgedreht.
-            // Wir erstellen einen neuen Comparator, der Favoriten priorisiert und dann absteigend sortiert.
-            val descendingComparator = favoritesComparator.thenComparing(secondaryComparator.reversed())
-            list.sortedWith(descendingComparator)
-
-            // Einfachere Alternative, falls das Verhalten "alles umdrehen" (auch Favoriten nach unten) akzeptabel wäre:
-            // list.sortedWith(finalComparator.reversed())
-            // Die obere Lösung (mit thenComparing(secondaryComparator.reversed())) ist aber meistens das, was man will.
-        }
-    }
-
-    // Stelle sicher, dass applyFiltersAndSorting diese Funktion korrekt aufruft:
-    private fun applyFiltersAndSorting(sourceList: List<AttractionWaitTime>) {
-        val filteredList = if (_uiState.value.filterOnlyOpen) {
-            sourceList.filter { it.status.lowercase(Locale.GERMANY) == "opened" }
-        } else {
-            sourceList
-        }
-
-        val sortedAndFilteredList = applySortingInternal(
-            filteredList,
-            _uiState.value.currentSortType,
-            _uiState.value.currentSortDirection,
-            _uiState.value.favoriteCodes
+    private fun buildUiState(
+        fetch: FetchState,
+        preferences: UserPreferences,
+        alerts: List<WaitTimeAlert>
+    ): WaitTimeUiState {
+        val hasData = fetch.snapshot != null
+        val all = fetch.snapshot?.waitTimes.orEmpty()
+        val visible = sortAttractions(
+            attractions = filterAttractions(all, preferences.filterOnlyOpen),
+            sortType = preferences.sortType,
+            direction = preferences.sortDirection,
+            favoriteCodes = preferences.favoriteCodes
         )
 
-        _uiState.update { it.copy(waitTimes = sortedAndFilteredList) }
+        return WaitTimeUiState(
+            // A request with nothing on screen yet is a first load; one on top of existing data
+            // is a refresh and only drives the pull-to-refresh indicator.
+            isLoading = fetch.isRequestInFlight && !hasData,
+            isRefreshing = fetch.isRequestInFlight && hasData,
+            waitTimes = visible,
+            error = fetch.error,
+            lastUpdated = fetch.snapshot?.fetchedAt ?: 0L,
+            isOfflineData = fetch.snapshot?.isFromCache == true,
+            sortType = preferences.sortType,
+            sortDirection = preferences.sortDirection,
+            favoriteCodes = preferences.favoriteCodes,
+            filterOnlyOpen = preferences.filterOnlyOpen,
+            activeAlerts = alerts,
+            activeAlertCodes = alerts.mapTo(mutableSetOf()) { it.attractionCode },
+            totalCount = all.size,
+            openCount = all.count { it.isOpen }
+        )
+    }
+
+    private fun Throwable.toWaitTimeError(): WaitTimeError = when (this) {
+        is UnknownHostException -> WaitTimeError.NO_CONNECTION
+        is SocketTimeoutException -> WaitTimeError.TIMEOUT
+        is HttpException -> WaitTimeError.SERVER
+        is IOException -> WaitTimeError.NO_CONNECTION
+        else -> WaitTimeError.UNKNOWN
+    }
+
+    private companion object {
+        /** Keeps the derived state alive across configuration changes without leaking. */
+        const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }

@@ -1,21 +1,35 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# Project specific ProGuard/R8 rules.
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Most libraries used here (Retrofit, OkHttp, kotlinx.serialization, Hilt, WorkManager)
+# ship their own consumer rules, so this file only contains what is specific to the app.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep line numbers in release stack traces but hide the original source file names.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# --- kotlinx.serialization ---
+# The compiler plugin generates a Companion.serializer() for every @Serializable class.
+# The library ships rules for this, but keeping the app's models explicitly is cheap
+# insurance against the reflective lookups used by the Retrofit converter.
+-keepclassmembers @kotlinx.serialization.Serializable class com.quantum_prof.phantalandwaittimes.** {
+    *** Companion;
+    *** INSTANCE;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keepclasseswithmembers class com.quantum_prof.phantalandwaittimes.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# --- Retrofit ---
+# Retrofit inspects generic signatures of suspend service methods at runtime.
+-keepattributes Signature,InnerClasses,EnclosingMethod,RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations
+
+# --- WorkManager ---
+# Workers are instantiated by name.
+-keep class * extends androidx.work.ListenableWorker { <init>(...); }
+
+# Strip verbose logging from release builds.
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+}

@@ -1,0 +1,78 @@
+<resources>
+    <string name="title_wait_times">Ventetider</string>
+    <string name="sort_options">Sorteringsindstillinger</string>
+    <string name="sort_ascending">Sorteret stigende</string>
+    <string name="sort_descending">Sorteret faldende</string>
+    <string name="sort_by_name">Efter navn</string>
+    <string name="sort_by_wait_time">Efter ventetid</string>
+
+    <string name="filter_only_open">Kun åbne attraktioner</string>
+    <string name="filter_open_of_total">%1$d ud af %2$d åbne</string>
+    <string name="alerts_show">Vis aktive alarmer</string>
+    <string name="alerts_hide">Skjul alarmer</string>
+
+    <string name="updated_just_now">Opdateret lige nu</string>
+    <plurals name="updated_minutes_ago">
+        <item quantity="one">Opdateret for %d minut siden</item>
+        <item quantity="other">Opdateret for %d minutter siden</item>
+    </plurals>
+    <plurals name="updated_hours_ago">
+        <item quantity="one">Opdateret for %d time siden</item>
+        <item quantity="other">Opdateret for %d timer siden</item>
+    </plurals>
+    <string name="updated_offline_prefix">Offline · %1$s</string>
+    <string name="updated_at_time">%1$s (%2$s)</string>
+
+    <string name="wait_minutes">%d min</string>
+    <string name="status_closed">Lukket</string>
+    <string name="status_maintenance">Vedligeholdelse</string>
+    <string name="status_unknown">Ukendt</string>
+    <string name="favorite_add">Føj til favoritter</string>
+    <string name="favorite_remove">Fjern fra favoritter</string>
+    <string name="alert_add">Tilføj alarm</string>
+    <string name="alert_edit">Rediger alarm</string>
+
+    <string name="alerts_active_title">Aktive alarmer (%d)</string>
+    <string name="alerts_collapse">Skjul alarmer</string>
+    <string name="alerts_remove">Fjern alarm</string>
+    <string name="alerts_target_reached">Mål nået!</string>
+    <string name="alerts_target_format">Mål: %d min</string>
+
+    <string name="alert_dialog_create_title">Opret alarm</string>
+    <string name="alert_dialog_edit_title">Rediger alarm</string>
+    <string name="alert_dialog_current_wait">Nuværende ventetid</string>
+    <string name="alert_dialog_notify_when">Giv mig besked, når ventetiden falder til højst</string>
+    <string name="alert_dialog_minutes_label">Minutter</string>
+    <string name="alert_dialog_minutes_suffix">min</string>
+    <string name="alert_dialog_invalid_input">Indtast et tal mellem %1$d og %2$d</string>
+    <string name="alert_dialog_delete">Slet alarm</string>
+    <string name="alert_dialog_cancel">Annuller</string>
+    <string name="alert_dialog_save">Gem</string>
+    <string name="alert_dialog_create">Opret</string>
+    <string name="alert_dialog_permission_hint">Notifikationer er slået fra. Alarmen gemmes, men du får ingen besked.</string>
+
+    <string name="loading_title">Henter ventetider</string>
+    <string name="loading_subtitle">De nyeste data hentes</string>
+    <string name="empty_all_closed_title">Alle attraktioner er lukkede</string>
+    <string name="empty_all_closed_subtitle">Slå filteret fra for også at se lukkede attraktioner.</string>
+    <string name="empty_no_data_title">Ingen data tilgængelige</string>
+    <string name="empty_no_data_subtitle">Træk listen ned for at prøve igen.</string>
+    <string name="error_title">Noget gik galt</string>
+    <string name="error_no_connection">Ingen forbindelse. Tjek dit netværk, og prøv igen.</string>
+    <string name="error_timeout">Anmodningen tog for lang tid. Prøv igen.</string>
+    <string name="error_server">Tjenesten svarer ikke lige nu. Prøv igen senere.</string>
+    <string name="error_unknown">Ventetiderne kunne ikke indlæses.</string>
+    <string name="action_retry">Prøv igen</string>
+
+    <string name="footer_data_by">Data leveret af</string>
+
+    <string name="notification_channel_name">Ventetidsalarmer</string>
+    <string name="notification_channel_description">Giver dig besked, så snart en attraktion når din ønskede ventetid.</string>
+    <string name="notification_title">%1$s har kort kø lige nu!</string>
+    <string name="notification_text">Nuværende ventetid: %1$d min (dit mål var %2$d min).</string>
+    <string name="notification_summary_title">Ventetidsalarmer</string>
+    <plurals name="notification_summary_text">
+        <item quantity="one">%d attraktion har nået dit mål</item>
+        <item quantity="other">%d attraktioner har nået dit mål</item>
+    </plurals>
+</resources>

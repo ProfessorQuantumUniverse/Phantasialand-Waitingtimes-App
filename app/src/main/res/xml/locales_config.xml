@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Locales the app ships translations for. Declaring them lets Android 13+ offer a per-app
+  language picker in system settings instead of forcing the device-wide language.
+
+  Coverage is Germany plus all nine neighbouring countries: Denmark (da), Poland (pl),
+  Czechia (cs), Austria and Switzerland (de, fr, it), France (fr), Luxembourg (fr, de),
+  Belgium (nl, fr, de) and the Netherlands (nl). English is the fallback for everyone else.
+-->
+<!-- defaultLocale is honoured from API 35 on and ignored below that, which is exactly the
+     behaviour we want; no need for a separate resource qualifier. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:defaultLocale="en"
+    tools:ignore="UnusedAttribute">
+    <locale android:name="en" />
+    <locale android:name="de" />
+    <locale android:name="nl" />
+    <locale android:name="fr" />
+    <locale android:name="pl" />
+    <locale android:name="cs" />
+    <locale android:name="da" />
+    <locale android:name="it" />
+</locale-config>

@@ -1,10 +1,8 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+// Top-level build file. Versions are declared centrally in gradle/libs.versions.toml.
 plugins {
-
-    id("com.android.application") version "8.9.2" apply false // Version anpassen
-    id("org.jetbrains.kotlin.android") version "2.0.21" apply false // Version anpassen
-    id("com.google.dagger.hilt.android") version "2.48.1" apply false // Version anpassen (muss zur dep passen)
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0" apply false // Version anpassen
-    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21" apply false // <-- DEINE KOTLIN VERSION
-
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.hilt) apply false
 }
